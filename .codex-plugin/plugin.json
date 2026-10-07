@@ -1,0 +1,34 @@
+{
+  "name": "blixel",
+  "version": "0.1.0",
+  "description": "Rooms, meeting chat, window sharing and transcripts through the blixel CLI.",
+  "author": {
+    "name": "Blixel",
+    "url": "https://blixel.app"
+  },
+  "homepage": "https://blixel.app",
+  "repository": "https://github.com/blixel-app/skills",
+  "license": "MIT",
+  "keywords": [
+    "blixel",
+    "meetings",
+    "transcripts",
+    "screen sharing"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Blixel",
+    "shortDescription": "Rooms, meeting chat, window sharing and transcripts",
+    "longDescription": "Uses the blixel CLI to create rooms and get their invite links, see who is in a room, post to the current meeting's chat, share windows into it, and search, read, export or follow transcripts recorded on this Mac.",
+    "developerName": "Blixel",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://blixel.app",
+    "defaultPrompt": [
+      "Summarise my last Blixel call"
+    ]
+  }
+}

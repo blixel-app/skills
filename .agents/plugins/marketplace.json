@@ -1,0 +1,20 @@
+{
+  "name": "blixel-app",
+  "interface": {
+    "displayName": "Blixel"
+  },
+  "plugins": [
+    {
+      "name": "blixel",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

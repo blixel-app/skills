@@ -1,0 +1,3 @@
+interface:
+  display_name: "Blixel"
+  short_description: "Rooms, meeting chat, window sharing and transcripts via the blixel CLI"

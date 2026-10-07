@@ -1,0 +1,16 @@
+{
+  "name": "blixel-app",
+  "owner": {
+    "name": "Blixel"
+  },
+  "metadata": {
+    "description": "Agent skills for Blixel"
+  },
+  "plugins": [
+    {
+      "name": "blixel",
+      "description": "Rooms, meeting chat, window sharing and transcripts through the blixel CLI",
+      "source": "./"
+    }
+  ]
+}
