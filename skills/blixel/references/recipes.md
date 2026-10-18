@@ -18,8 +18,8 @@
 ## Find what was said about something
 
 `blixel transcript search "every word"` across all transcripts, newest first.
-Each hit has `meeting_id` and `offset_ms`. For context around a hit,
-`transcript read <meeting_id>` and page to the nearby `offset_ms`. Quote
+Each hit has `transcript_id` and `offset_ms`. For context around a hit,
+`transcript read <transcript_id>` and page to the nearby `offset_ms`. Quote
 `speaker_name` and the time (`at`).
 
 ## Watch a live call

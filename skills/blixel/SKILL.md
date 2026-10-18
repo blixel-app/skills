@@ -161,7 +161,7 @@ when the app isn't running.
 - `blixel transcript list`: newest first, with `id`, `room_name`, `started_at`.
   No `ended_at` means it is still being written.
 - `blixel transcript search "words"`: finds utterances with every word.
-  `--meeting <id>` limits it to one transcript.
+  `--transcript <id>` limits it to one transcript.
 - `blixel transcript read <id>`: speaking order, paged with `--cursor`.
 - `blixel transcript export <id> --format md|jsonl|txt [--output FILE]`: the
   whole transcript in one go, best for summarising. Without `--output` it prints
