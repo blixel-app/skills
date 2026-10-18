@@ -53,11 +53,8 @@ To stop everything shared, take `shares` from `window status` and run
    before.
 2. `blixel event watch --type participant.joined > /tmp/blixel-events.jsonl 2>/tmp/blixel-events.err &`
    and read lines as they arrive; the first is `watching`.
-3. When `data.participant_identity` matches, tell the person. Everyone on one
-   Standalone invite link shares an identity, so say "someone with that link"
-   there.
-
-Stop the watch with SIGINT when done.
+3. When `data.participant_identity` matches, tell the person. Stop the watch with
+   SIGINT when done.
 
 ## Who is in a room
 
