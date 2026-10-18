@@ -1,6 +1,6 @@
 # Recipes
 
-`$PID` is `participation_id` from `blixel room current`, read fresh each time.
+`$MEETING_ID` is `meeting_id` from `blixel room current`, read fresh each time.
 
 ## Summarise a call
 
@@ -13,7 +13,7 @@
    `speaker_name`, and say where `gap` or `paused` stretches left holes.
 4. If the person wants it in the call's chat, show the text, get a yes, then
    `chat send` with a fresh `uuidgen` request id. Check that `room current` still
-   shows the same `participation_id` first.
+   shows the same `meeting_id` first.
 
 ## Find what was said about something
 
@@ -36,10 +36,10 @@ with SIGINT when no longer needed.
 
 ## Share a window
 
-1. `blixel window list --participation-id "$PID"`.
+1. `blixel window list --meeting-id "$MEETING_ID"`.
 2. Match the person's description against `app` and `title`. If several match
    or none do, show the candidates and ask.
-3. `blixel window share <handle> --participation-id "$PID"` → `started` or
+3. `blixel window share <handle> --meeting-id "$MEETING_ID"` → `started` or
    `already_sharing`.
 4. Confirm with `window status`: `publication: "live"` means others are seeing it.
 

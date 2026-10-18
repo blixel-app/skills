@@ -107,9 +107,9 @@ are separate from the app's sign-in.
 `blixel room current` comes first for anything about a live call:
 
 - `state`: `idle`, `connected` or `reconnecting`. Reconnecting is still in the call.
-- `participation_id`: required by every `chat` and `window` command. It changes
+- `meeting_id`: required by every `chat` and `window` command. It changes
   on every join and stays the same across reconnects. Read it fresh. A stale one
-  fails with `participation_mismatch` and changes nothing; don't work around that
+  fails with `meeting_mismatch` and changes nothing; don't work around that
   by swapping in the new id without checking that the person still means this call.
 - `transcription.transcript_id`: the live transcript, if one is running.
 
@@ -119,7 +119,7 @@ the app is showing a dialog. Ask the person to look.
 ## Posting to chat
 
 ```sh
-blixel chat send --participation-id "$PID" --request-id "$(uuidgen)" -- "$TEXT"
+blixel chat send --meeting-id "$MEETING_ID" --request-id "$(uuidgen)" -- "$TEXT"
 ```
 
 - Pick the request id yourself (`uuidgen`) and keep it, so a retry can reuse it.
@@ -134,10 +134,10 @@ blixel chat send --participation-id "$PID" --request-id "$(uuidgen)" -- "$TEXT"
 ## Sharing windows
 
 ```sh
-blixel window list    --participation-id "$PID"
-blixel window share <handle>   --participation-id "$PID"
-blixel window unshare <handle> --participation-id "$PID"
-blixel window status  --participation-id "$PID"
+blixel window list    --meeting-id "$MEETING_ID"
+blixel window share <handle>   --meeting-id "$MEETING_ID"
+blixel window unshare <handle> --meeting-id "$MEETING_ID"
+blixel window status  --meeting-id "$MEETING_ID"
 ```
 
 - Choose by `app` and `title` from `list`. Handles are opaque and die with the
