@@ -46,6 +46,19 @@ with SIGINT when no longer needed.
 To stop everything shared, take `shares` from `window status` and run
 `window unshare` for each handle.
 
+## Notice when someone joins
+
+1. Get their `participant_identity`: their `speaker_identity` in a transcript is
+   the same value, as is the identity on a `participant.joined` seen for them
+   before.
+2. `blixel event watch --type participant.joined > /tmp/blixel-events.jsonl 2>/tmp/blixel-events.err &`
+   and read lines as they arrive; the first is `watching`.
+3. When `data.participant_identity` matches, tell the person. Everyone on one
+   Standalone invite link shares an identity, so say "someone with that link"
+   there.
+
+Stop the watch with SIGINT when done.
+
 ## Who is in a room
 
 `blixel room list` → find the room by `name` → `blixel room presence <id>`.

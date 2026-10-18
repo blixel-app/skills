@@ -184,6 +184,19 @@ A transcript with no `ended` and no running meeting was cut short by a crash.
 For the "summarise the call" flow and other recipes, see
 [references/recipes.md](references/recipes.md).
 
+## Events
+
+`blixel event watch --type <type> [--type …]` prints one JSON line per event as it
+is written and blocks, so run it in the background; `blixel event types` lists the
+types. Lines carry ids only (`type`, `subject`, `room_id`, `at`, `data`). To resume,
+pass the last handled line's `after` as `--after`.
+
+- `meeting.joined` / `meeting.left`: this Blixel joined or left a room.
+- `participant.joined` / `participant.left`: someone else joined or left that room.
+  Seen only while the app is in it: none for people already there when it joined,
+  no `left` for those still there when it leaves.
+- `transcript.started` / `transcript.ended`.
+
 ## Errors
 
 | exit | category | what to do |
