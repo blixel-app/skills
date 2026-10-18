@@ -104,7 +104,7 @@ are separate from the app's sign-in.
 
 ## The current meeting
 
-`blixel meeting status` comes first for anything about a live call:
+`blixel room current` comes first for anything about a live call:
 
 - `state`: `idle`, `connected` or `reconnecting`. Reconnecting is still in the call.
 - `participation_id`: required by every `chat` and `window` command. It changes

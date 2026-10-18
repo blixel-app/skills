@@ -1,10 +1,10 @@
 # Recipes
 
-`$PID` is `participation_id` from `blixel meeting status`, read fresh each time.
+`$PID` is `participation_id` from `blixel room current`, read fresh each time.
 
 ## Summarise a call
 
-1. Find it. Use `meeting status` → `transcription.transcript_id` for the call in
+1. Find it. Use `room current` → `transcription.transcript_id` for the call in
    progress, or `transcript list` to match `room_name` and `started_at` for a past
    call.
 2. `blixel transcript export <id> --format md`. This is the whole transcript as
@@ -12,7 +12,7 @@
 3. Summarise: decisions, action items with owners, open questions. Attribute by
    `speaker_name`, and say where `gap` or `paused` stretches left holes.
 4. If the person wants it in the call's chat, show the text, get a yes, then
-   `chat send` with a fresh `uuidgen` request id. Check that `meeting status` still
+   `chat send` with a fresh `uuidgen` request id. Check that `room current` still
    shows the same `participation_id` first.
 
 ## Find what was said about something
