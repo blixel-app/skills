@@ -8,8 +8,8 @@ description: Work with Blixel meetings through the `blixel` CLI — sign in to a
 `blixel` talks to two things:
 
 - **The Blixel server** (`auth`, `connection`, `room`) with the CLI's own sign-in.
-- **The Blixel app on this Mac** (`meeting`, `chat`, `window`) over a local socket, and
-  **the transcript database** (`transcript`) on disk.
+- **The Blixel app on this Mac** (`room current`, `chat`, `window`) over a local socket, and
+  **its database** (`transcript`, `event`) on disk.
 
 It never launches the app, joins a room or starts transcription. Those are the
 person's to do in the app; say so when a task needs them.
