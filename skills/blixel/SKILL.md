@@ -14,8 +14,8 @@ description: Work with Blixel meetings through the `blixel` CLI — sign in to a
 It never launches the app, joins a room or starts transcription. Those are the
 person's to do in the app; say so when a task needs them.
 
-To let people in the call hand spoken requests to this Claude Code session, use
-the `connect-agent` skill (`blixel agent`).
+To let people in the call hand spoken requests to this Claude Code or Codex
+session, use the `connect-agent` skill (`blixel agent`).
 
 ## Before the first command
 

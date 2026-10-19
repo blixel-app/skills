@@ -6,7 +6,7 @@ and any other agent that reads `SKILL.md` skills.
 | Skill | What it does |
 | --- | --- |
 | [`blixel`](skills/blixel/SKILL.md) | Uses the `blixel` CLI to list rooms and who is in them, check the current meeting, post to its chat, share windows into it, and search, read, export or follow transcripts. |
-| [`connect-agent`](skills/connect-agent/SKILL.md) | Connects a Claude Code session to your current Blixel meeting, so people in the call can hand it spoken requests. Claude Code only. |
+| [`connect-agent`](skills/connect-agent/SKILL.md) | Connects a Claude Code or Codex session to your current Blixel meeting, so people in the call can hand it spoken requests. |
 
 ## Requirements
 
@@ -50,7 +50,7 @@ Or copy `skills/blixel` into the agent's skills folder.
 The agent asks before anything that others in the call will see: chat messages
 and window sharing.
 
-## Connecting Claude Code to a call
+## Connecting Claude Code or Codex to a call
 
 Run `/blixel:connect-agent` in the Claude Code session that should take requests
 while Blixel is in a meeting. People in the call can then speak a request to it
@@ -65,6 +65,14 @@ monitors: they don't run when `DISABLE_TELEMETRY` or
 Cloud's Agent Platform or Microsoft Foundry. If the session's monitor has stopped,
 restart Claude Code. With Claude Code's Bash sandbox on, add the socket path that
 `blixel agent connect` reports to `sandbox.network.allowUnixSockets`.
+
+In Codex, ask the session to connect to the Blixel call. Start it with
+`--no-daemon`: Blixel cannot tell when a session on Codex's shared app-server
+closes, so it refuses to connect one. Blixel queues each handoff into that thread
+with `codex queue`, and Codex runs it after any turn in progress. Codex's sandbox
+blocks Blixel's local socket, so approve running `blixel agent` outside the
+sandbox when Codex asks; that needs an approval policy that asks, such as
+`-a on-request`. Quitting Codex ends the connection.
 
 ## Releasing
 
