@@ -24,5 +24,18 @@
         "when": "on-skill-invoke:blixel:connect-agent"
       }
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/skills/connect-agent/scripts/session-start.sh\""
+          }
+        ]
+      }
+    ]
   }
 }
