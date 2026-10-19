@@ -6,6 +6,7 @@ and any other agent that reads `SKILL.md` skills.
 | Skill | What it does |
 | --- | --- |
 | [`blixel`](skills/blixel/SKILL.md) | Uses the `blixel` CLI to list rooms and who is in them, check the current meeting, post to its chat, share windows into it, and search, read, export or follow transcripts. |
+| [`connect-agent`](skills/connect-agent/SKILL.md) | Connects a Claude Code session to your current Blixel meeting, so people in the call can hand it spoken requests. Claude Code only. |
 
 ## Requirements
 
@@ -48,6 +49,22 @@ Or copy `skills/blixel` into the agent's skills folder.
 
 The agent asks before anything that others in the call will see: chat messages
 and window sharing.
+
+## Connecting Claude Code to a call
+
+Run `/blixel:connect-agent` in the Claude Code session that should take requests
+while Blixel is in a meeting. People in the call can then speak a request to it
+from Blixel; each arrives in that session as a "Blixel handoff" line, framed as a
+colleague's suggestion rather than your instruction, and the agent asks you before
+anything destructive. A meeting has one connected session: connecting another
+replaces it. Leaving the room ends the connection.
+
+The plugin's monitor delivers the handoffs, so the session needs Claude Code
+monitors: they don't run when `DISABLE_TELEMETRY` or
+`CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` is set, or on Amazon Bedrock, Google
+Cloud's Agent Platform or Microsoft Foundry. If the session's monitor has stopped,
+restart Claude Code. With Claude Code's Bash sandbox on, add the socket path that
+`blixel agent connect` reports to `sandbox.network.allowUnixSockets`.
 
 ## Releasing
 
