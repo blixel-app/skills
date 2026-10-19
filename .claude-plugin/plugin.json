@@ -14,5 +14,15 @@
     "meetings",
     "transcripts",
     "screen sharing"
-  ]
+  ],
+  "experimental": {
+    "monitors": [
+      {
+        "name": "handoffs",
+        "command": "blixel agent follow",
+        "description": "Blixel handoffs",
+        "when": "on-skill-invoke:blixel:connect-agent"
+      }
+    ]
+  }
 }
