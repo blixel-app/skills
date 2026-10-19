@@ -1,10 +1,10 @@
 # Recipes
 
-`$PID` is `participation_id` from `blixel meeting status`, read fresh each time.
+`$MEETING_ID` is `meeting_id` from `blixel room current`, read fresh each time.
 
 ## Summarise a call
 
-1. Find it. Use `meeting status` → `transcription.transcript_id` for the call in
+1. Find it. Use `room current` → `transcription.transcript_id` for the call in
    progress, or `transcript list` to match `room_name` and `started_at` for a past
    call.
 2. `blixel transcript export <id> --format md`. This is the whole transcript as
@@ -12,14 +12,14 @@
 3. Summarise: decisions, action items with owners, open questions. Attribute by
    `speaker_name`, and say where `gap` or `paused` stretches left holes.
 4. If the person wants it in the call's chat, show the text, get a yes, then
-   `chat send` with a fresh `uuidgen` request id. Check that `meeting status` still
-   shows the same `participation_id` first.
+   `chat send` with a fresh `uuidgen` request id. Check that `room current` still
+   shows the same `meeting_id` first.
 
 ## Find what was said about something
 
 `blixel transcript search "every word"` across all transcripts, newest first.
-Each hit has `meeting_id` and `offset_ms`. For context around a hit,
-`transcript read <meeting_id>` and page to the nearby `offset_ms`. Quote
+Each hit has `transcript_id` and `offset_ms`. For context around a hit,
+`transcript read <transcript_id>` and page to the nearby `offset_ms`. Quote
 `speaker_name` and the time (`at`).
 
 ## Watch a live call
@@ -36,15 +36,25 @@ with SIGINT when no longer needed.
 
 ## Share a window
 
-1. `blixel window list --participation-id "$PID"`.
+1. `blixel window list --meeting-id "$MEETING_ID"`.
 2. Match the person's description against `app` and `title`. If several match
    or none do, show the candidates and ask.
-3. `blixel window share <handle> --participation-id "$PID"` → `started` or
+3. `blixel window share <handle> --meeting-id "$MEETING_ID"` → `started` or
    `already_sharing`.
 4. Confirm with `window status`: `publication: "live"` means others are seeing it.
 
 To stop everything shared, take `shares` from `window status` and run
 `window unshare` for each handle.
+
+## Notice when someone joins
+
+1. Get their `participant_identity`: their `speaker_identity` in a transcript is
+   the same value, as is the identity on a `participant.joined` seen for them
+   before.
+2. `blixel event watch --type participant.joined > /tmp/blixel-events.jsonl 2>/tmp/blixel-events.err &`
+   and read lines as they arrive; the first is `watching`.
+3. When `data.participant_identity` matches, tell the person. Stop the watch with
+   SIGINT when done.
 
 ## Who is in a room
 

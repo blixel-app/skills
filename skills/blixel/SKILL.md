@@ -8,8 +8,8 @@ description: Work with Blixel meetings through the `blixel` CLI — sign in to a
 `blixel` talks to two things:
 
 - **The Blixel server** (`auth`, `connection`, `room`) with the CLI's own sign-in.
-- **The Blixel app on this Mac** (`meeting`, `chat`, `window`) over a local socket, and
-  **the transcript database** (`transcript`) on disk.
+- **The Blixel app on this Mac** (`room current`, `chat`, `window`) over a local socket, and
+  **its database** (`transcript`, `event`) on disk.
 
 It never launches the app, joins a room or starts transcription. Those are the
 person's to do in the app; say so when a task needs them.
@@ -104,12 +104,12 @@ are separate from the app's sign-in.
 
 ## The current meeting
 
-`blixel meeting status` comes first for anything about a live call:
+`blixel room current` comes first for anything about a live call:
 
 - `state`: `idle`, `connected` or `reconnecting`. Reconnecting is still in the call.
-- `participation_id`: required by every `chat` and `window` command. It changes
+- `meeting_id`: required by every `chat` and `window` command. It changes
   on every join and stays the same across reconnects. Read it fresh. A stale one
-  fails with `participation_mismatch` and changes nothing; don't work around that
+  fails with `meeting_mismatch` and changes nothing; don't work around that
   by swapping in the new id without checking that the person still means this call.
 - `transcription.transcript_id`: the live transcript, if one is running.
 
@@ -119,7 +119,7 @@ the app is showing a dialog. Ask the person to look.
 ## Posting to chat
 
 ```sh
-blixel chat send --participation-id "$PID" --request-id "$(uuidgen)" -- "$TEXT"
+blixel chat send --meeting-id "$MEETING_ID" --request-id "$(uuidgen)" -- "$TEXT"
 ```
 
 - Pick the request id yourself (`uuidgen`) and keep it, so a retry can reuse it.
@@ -134,10 +134,10 @@ blixel chat send --participation-id "$PID" --request-id "$(uuidgen)" -- "$TEXT"
 ## Sharing windows
 
 ```sh
-blixel window list    --participation-id "$PID"
-blixel window share <handle>   --participation-id "$PID"
-blixel window unshare <handle> --participation-id "$PID"
-blixel window status  --participation-id "$PID"
+blixel window list    --meeting-id "$MEETING_ID"
+blixel window share <handle>   --meeting-id "$MEETING_ID"
+blixel window unshare <handle> --meeting-id "$MEETING_ID"
+blixel window status  --meeting-id "$MEETING_ID"
 ```
 
 - Choose by `app` and `title` from `list`. Handles are opaque and die with the
@@ -161,7 +161,7 @@ when the app isn't running.
 - `blixel transcript list`: newest first, with `id`, `room_name`, `started_at`.
   No `ended_at` means it is still being written.
 - `blixel transcript search "words"`: finds utterances with every word.
-  `--meeting <id>` limits it to one transcript.
+  `--transcript <id>` limits it to one transcript.
 - `blixel transcript read <id>`: speaking order, paged with `--cursor`.
 - `blixel transcript export <id> --format md|jsonl|txt [--output FILE]`: the
   whole transcript in one go, best for summarising. Without `--output` it prints
@@ -183,6 +183,19 @@ A transcript with no `ended` and no running meeting was cut short by a crash.
 
 For the "summarise the call" flow and other recipes, see
 [references/recipes.md](references/recipes.md).
+
+## Events
+
+`blixel event watch --type <type> [--type …]` prints one JSON line per event as it
+is written and blocks, so run it in the background; `blixel event types` lists the
+types. Lines carry ids only (`type`, `subject`, `room_id`, `at`, `data`). To resume,
+pass the last handled line's `after` as `--after`.
+
+- `meeting.joined` / `meeting.left`: this Blixel joined or left a room.
+- `participant.joined` / `participant.left`: someone else joined or left that room.
+  Seen only while the app is in it: none for people already there when it joined,
+  no `left` for those still there when it leaves.
+- `transcript.started` / `transcript.ended`.
 
 ## Errors
 
