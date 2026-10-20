@@ -91,19 +91,19 @@ to the Blixel app on this Mac.
 `blixel agent connect` connects this Codex thread (`CODEX_THREAD_ID`). Blixel then
 queues each handoff into this thread with `codex queue`; it runs as a turn of its
 own, after the current one. Report success and `data.replaced` as under Connect.
-On failure, by `code`:
+If `data.codex_shared_app_server` is true, also tell the user that this thread
+runs on Codex's shared app-server, so a handoff still runs in it after they close
+this terminal: ask this session to disconnect first. On failure, by `code`:
 
-- `daemon_session`: this session runs on Codex's shared app-server, where Blixel
-  cannot tell when it closes. Ask the user to quit and resume this thread with
-  `codex resume --no-daemon <CODEX_THREAD_ID>`, then connect again.
 - `socket_blocked`: the command still ran inside the sandbox. If no escalation was
-  offered, this session's approval policy does not allow one: ask the user to start
-  Codex with `-a on-request`, then connect again. Don't change their settings unless
-  they ask.
+  offered, this session's permissions do not allow one: ask the user to run
+  `/permissions` and choose Approve for me, then connect again. Don't change their
+  settings unless they ask.
 - Any other code: as under Connect.
 
 `blixel agent status` and `blixel agent disconnect` work as under Status and
 Disconnect, also outside the sandbox; this thread is connected when
-`data.session.connection_id` is set. Quitting Codex ends the connection. A new
-conversation in the same session (`/new`, `/resume`) is another thread and does not
-receive handoffs: connect again from it.
+`data.session.connection_id` is set. Quitting Codex ends the connection, except
+on the shared app-server (`codex_shared_app_server`), where the thread keeps
+running: disconnect first. A new conversation in the same session (`/new`,
+`/resume`) is another thread and does not receive handoffs: connect again from it.

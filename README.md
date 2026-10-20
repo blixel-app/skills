@@ -66,13 +66,13 @@ Cloud's Agent Platform or Microsoft Foundry. If the session's monitor has stoppe
 restart Claude Code. With Claude Code's Bash sandbox on, add the socket path that
 `blixel agent connect` reports to `sandbox.network.allowUnixSockets`.
 
-In Codex, ask the session to connect to the Blixel call. Start it with
-`--no-daemon`: Blixel cannot tell when a session on Codex's shared app-server
-closes, so it refuses to connect one. Blixel queues each handoff into that thread
-with `codex queue`, and Codex runs it after any turn in progress. Codex's sandbox
-blocks Blixel's local socket, so approve running `blixel agent` outside the
-sandbox when Codex asks; that needs an approval policy that asks, such as
-`-a on-request`. Quitting Codex ends the connection.
+In Codex, ask the session to connect to the Blixel call. Blixel queues each
+handoff into that thread with `codex queue`, and Codex runs it after any turn in
+progress. Codex's sandbox blocks Blixel's local socket, so approve running
+`blixel agent` outside the sandbox when Codex asks; if it can't ask, run
+`/permissions` and choose Approve for me. A plain `codex` session runs on Codex's
+shared app-server, where a handoff still runs after you close its terminal, so ask
+the session to disconnect before you close it.
 
 ## Releasing
 
