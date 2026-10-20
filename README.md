@@ -5,7 +5,7 @@ and any other agent that reads `SKILL.md` skills.
 
 | Skill | What it does |
 | --- | --- |
-| [`blixel`](skills/blixel/SKILL.md) | Uses the `blixel` CLI to list rooms and who is in them, check the current meeting, post to its chat, share windows into it, and search, read, export or follow transcripts. |
+| [`blixel`](skills/blixel/SKILL.md) | Uses the `blixel` CLI to list rooms and who is in them, check the current meeting, read and post to its chat, share windows into it, and search, read, export or follow transcripts. |
 
 ## Requirements
 
@@ -42,6 +42,7 @@ Or copy `skills/blixel` into the agent's skills folder.
 ## Then ask your agent
 
 - "Summarise my last Blixel call and post the action items to the chat."
+- "What have people said in the call's chat so far?"
 - "Who's in the design room right now?"
 - "Share my Figma window into the call."
 - "What did we decide about the release in yesterday's standup?"
