@@ -34,6 +34,18 @@ the last one handled. If the watcher is restarted, use
 pick whatever call is live by then. It exits by itself after `ended`. Stop it
 with SIGINT when no longer needed.
 
+## Catch up on the chat
+
+1. `blixel room current` for `meeting_id`.
+2. `blixel chat read --meeting-id "$MEETING_ID"` and summarise `messages` by
+   `sender_name`. If `evicted_count` is above 0, say the oldest messages are no
+   longer kept.
+3. Keep the last `sequence`. Next time, `chat read --after <sequence>` returns only
+   what is new; after `cursor_expired`, read again without `--after`.
+
+To keep watching, `blixel chat follow --meeting-id "$MEETING_ID" > /tmp/blixel-chat.jsonl 2>/tmp/blixel-chat.err &`
+and read the file as it grows. It stops by itself when the call ends.
+
 ## Share a window
 
 1. `blixel window list --meeting-id "$MEETING_ID"`.
