@@ -59,12 +59,15 @@ colleague's suggestion rather than your instruction, and the agent asks you befo
 anything destructive. A meeting has one connected session: connecting another
 replaces it. Leaving the room ends the connection.
 
-The plugin's monitor delivers the handoffs, so the session needs Claude Code
-monitors: they don't run when `DISABLE_TELEMETRY` or
-`CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` is set, or on Amazon Bedrock, Google
-Cloud's Agent Platform or Microsoft Foundry. If the session's monitor has stopped,
-restart Claude Code. With Claude Code's Bash sandbox on, add the socket path that
-`blixel agent connect` reports to `sandbox.network.allowUnixSockets`.
+In the Claude Code CLI the plugin's monitor delivers the handoffs. Where plugin
+monitors don't run, as in the Claude desktop app, the skill starts a Monitor for
+them and starts it again each time Claude Code stops it after 30 minutes. Either
+way the session needs Claude Code monitors: they don't run when
+`DISABLE_TELEMETRY` or `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` is set, or on
+Amazon Bedrock, Google Cloud's Agent Platform or Microsoft Foundry. If handoffs
+stop arriving, run `/blixel:connect-agent` again. With Claude Code's Bash sandbox
+on, add the socket path that `blixel agent connect` reports to
+`sandbox.network.allowUnixSockets`.
 
 In Codex, ask the session to connect to the Blixel call. Blixel queues each
 handoff into that thread with `codex queue`, and Codex runs it after any turn in
