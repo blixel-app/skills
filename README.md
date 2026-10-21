@@ -53,11 +53,13 @@ and window sharing.
 ## Connecting Claude Code or Codex to a call
 
 Run `/blixel:connect-agent` in the Claude Code session that should take requests
-while Blixel is in a meeting. People in the call can then speak a request to it
-from Blixel; each arrives in that session as a "Blixel handoff" line, framed as a
-colleague's suggestion rather than your instruction, and the agent asks you before
-anything destructive. A meeting has one connected session: connecting another
-replaces it. Leaving the room ends the connection.
+while Blixel is in a meeting. People in the call can then speak or type a request
+to it from Blixel; each arrives in that session through its "Blixel handoffs"
+monitor as the message you set in Blixel's Settings › Agents, the request alone by
+default. The skill tells the agent it is a colleague's suggestion rather than your
+instruction, and the agent asks you before anything destructive. A meeting has one
+connected session: connecting another replaces it. Leaving the room ends the
+connection.
 
 In the Claude Code CLI the plugin's monitor delivers the handoffs. Where plugin
 monitors don't run, as in the Claude desktop app, the skill starts a Monitor for
