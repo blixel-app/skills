@@ -71,6 +71,8 @@ stop arriving, run `/blixel:connect-agent` again. With Claude Code's Bash sandbo
 on, add the socket path that `blixel agent connect` reports to
 `sandbox.network.allowUnixSockets`.
 
+Installed as a skill only (`npx skills add`), connecting still works, but after `/clear` or a compaction ask the session to connect to Blixel again, or it will not act on the handoffs it keeps receiving.
+
 In Codex, ask the session to connect to the Blixel call. Blixel queues each
 handoff into that thread with `codex queue`, and Codex runs it after any turn in
 progress. Codex's sandbox blocks Blixel's local socket, so approve running
