@@ -15,6 +15,15 @@
    `chat send` with a fresh `uuidgen` request id. Check that `room current` still
    shows the same `meeting_id` first.
 
+## Summarise the chat so far
+
+1. `blixel chat read --meeting-id "$MEETING_ID"`. `not_in_meeting` means there is
+   no call, and its chat isn't kept after one.
+2. Summarise by `sender_name`: questions, links, decisions. If `evicted_count`
+   is above 0, say the earliest messages are no longer available.
+3. To catch up later, keep the last `sequence` and read with `--after` it.
+4. To post the summary to the chat, as step 4 above.
+
 ## Find what was said about something
 
 `blixel transcript search "every word"` across all transcripts, newest first.
@@ -79,3 +88,22 @@ app.
 `blixel connection list` shows each connection's `name`, `server` and `active`.
 Use `--connection <name>` for one command, or `blixel connection use <name>` to
 change the default (a local change, but tell the person).
+
+## Run something when a call's transcript ends
+
+1. Agree on the script with the person, for example `~/bin/blixel-notes.sh`:
+
+   ```sh
+   #!/bin/zsh
+   mkdir -p ~/Notes/Blixel
+   blixel transcript export "$BLIXEL_TRANSCRIPT_ID" --format md > ~/Notes/Blixel/"$BLIXEL_TRANSCRIPT_ID".md
+   ```
+
+   Make it executable. For one room only, get its id from `blixel room list`.
+2. With their yes:
+   `blixel hook add notes --type transcript.ended [--room <room-id>] --command ~/bin/blixel-notes.sh`
+3. With Blixel open, `blixel hook test notes --wait` runs it on the newest ended
+   transcript. Check `result`; if it isn't `ok`, read the `log` file.
+
+Hooks run only while Blixel is open. The person can also manage them in
+Settings › Hooks.
