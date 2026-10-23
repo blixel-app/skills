@@ -5,7 +5,7 @@ and any other agent that reads `SKILL.md` skills.
 
 | Skill | What it does |
 | --- | --- |
-| [`blixel`](skills/blixel/SKILL.md) | Uses the `blixel` CLI to list rooms and who is in them, check the current meeting, post to its chat, share windows into it, and search, read, export or follow transcripts. |
+| [`blixel`](skills/blixel/SKILL.md) | Uses the `blixel` CLI to list rooms and who is in them, check the current meeting, read, follow and post to its chat, share windows into it, search, read, export or follow transcripts, and set up hooks that run a command when something happens. |
 | [`connect-agent`](skills/connect-agent/SKILL.md) | Connects a Claude Code or Codex session to your current Blixel meeting, so people in the call can hand it spoken requests. |
 
 ## Requirements
