@@ -1,6 +1,6 @@
 ---
 name: blixel
-description: Work with Blixel meetings through the `blixel` CLI — sign in to a Blixel server, list and create rooms, get a room's invite link, see who is in a room, check the running app's meeting, read and post to its chat, share windows into it, and list, search, read, export or follow the meeting transcripts recorded on this Mac. Use when the user mentions Blixel, a Blixel room, call or meeting, wants a room made or a link to one, its chat, sharing a window into a call, or wants notes, summaries or quotes from a Blixel transcript.
+description: Work with Blixel meetings through the `blixel` CLI — sign in to a Blixel server, list and create rooms, get a room's invite link, see who is in a room, check the running app's meeting, read, follow and post to its chat, share windows into it, list, search, read, export or follow the meeting transcripts recorded on this Mac, and set up and check hooks that run a command when something happens in Blixel. Use when the user mentions Blixel, a Blixel room, call or meeting, wants a room made or a link to one, wants to read, summarise or watch its chat or post to it, wants a window shared into a call, wants notes, summaries or quotes from a Blixel transcript, or wants something run automatically when a call or its transcript ends (Blixel hooks).
 ---
 
 # Blixel CLI
@@ -8,23 +8,29 @@ description: Work with Blixel meetings through the `blixel` CLI — sign in to a
 `blixel` talks to two things:
 
 - **The Blixel server** (`auth`, `connection`, `room`) with the CLI's own sign-in.
-- **The Blixel app on this Mac** (`room current`, `chat`, `window`) over a local socket, and
-  **its database** (`transcript`, `event`) on disk.
+- **The Blixel app on this Mac** (`room current`, `chat`, `window`, `hook test`,
+  `hook rerun`) over a local socket, and **its files** (`transcript`, `event`,
+  the rest of `hook`) on disk.
 
 It never launches the app, joins a room or starts transcription. Those are the
 person's to do in the app; say so when a task needs them.
 
+To let people in the call hand spoken requests to this Claude Code or Codex
+session, use the `connect-agent` skill (`blixel agent`).
+
 ## Before the first command
 
-1. `command -v blixel`. If it is missing, Blixel is installed with
-   `brew install --cask blixel-app/tap/blixel` (macOS 15+, Apple silicon). Ask
-   before installing.
+1. If the shell can't find `blixel` (`command not found`), run
+   `${CLAUDE_SKILL_DIR}/scripts/blixel` (the `scripts/blixel` beside this file)
+   wherever this skill says `blixel` from then on: it runs the CLI inside the
+   Blixel app. If that prints "Blixel isn't installed", tell the person to get it
+   at https://blixel.app.
 2. `blixel schema` lists every command with its `effect` and `requires`.
    `blixel schema <group> <command>` (separate words, e.g. `blixel schema chat send`)
    gives the exact arguments, result fields, error codes and retry notes. The
    installed CLI is the authority: read its schema before using a command for the
    first time rather than guessing flags. A command missing from the schema means
-   the CLI is older than this skill; suggest `brew upgrade --cask blixel`.
+   the CLI is older than this skill; suggest updating Blixel.
 
 ## Reading output
 
@@ -44,7 +50,8 @@ The schema's `effect` says what a command changes:
 
 | effect | commands | rule |
 | --- | --- | --- |
-| `none`, `local_state` | status, listings, reads, export, `connection use` | run freely |
+| `none`, `local_state` | status, listings, reads (`chat read` and `follow` too), export, `connection use` | run freely |
+| `local_state` | `hook add`, `edit`, `enable`, `disable`, `remove`, `test`, `rerun` | only when asked; a hook runs a command on this Mac |
 | `server` | `auth login`, `auth logout`, `room create` | only when asked |
 | `meeting` | `chat send`, `window share`, `window unshare` | only when asked; everyone in the call sees it |
 
@@ -227,6 +234,47 @@ pass the last handled line's `after` as `--after`.
   no `left` for those still there when it leaves.
 - `transcript.started` / `transcript.ended`.
 
+## Hooks
+
+A hook is a command the Blixel app runs once for each event that matches it,
+such as a script that summarises each transcript when it ends. The app is the
+only thing that runs hooks, and only while it is open; at launch it catches up
+on what happened while it was closed.
+
+```sh
+blixel hook list
+blixel hook show <id>
+blixel hook add <id> --type <type>... [--room <room-id>]... --command <command>
+blixel hook edit | enable | disable | remove <id>
+blixel hook test <id> [--wait]
+blixel hook rerun <id> <event-id> [--wait]
+```
+
+- Change hooks only with these commands, never by writing `hooks.json`
+  yourself: they take turns with Settings › Hooks and keep what they don't
+  change. `hooks_file_invalid` means the file doesn't parse and no hook runs;
+  tell the person rather than rewriting it.
+- Show the command and get a yes before `add`. The id is lowercase letters,
+  digits and dashes and can't change (`hook_exists` if taken). `--type` takes
+  `event types` names; without `--room` it runs for any room. A new hook starts
+  within 30 seconds and runs nothing from before. `remove` also deletes its runs
+  and logs, so ask first.
+- The command runs in the person's login shell (`PATH` from `~/.zprofile`, not
+  `~/.zshrc`) and gets the event on stdin as `event watch` prints it, and in
+  variables such as `BLIXEL_EVENT_TYPE`, `BLIXEL_ROOM_ID` and, for
+  `transcript.*`, `BLIXEL_TRANSCRIPT_ID`. `event types` lists each type's under
+  `environment`. Exit 0 is success; failures are retried (`--retries`, default 2).
+- `list` gives each hook's `last_result` (`ok`, `failed`, `running`,
+  `retrying`) and how many events `failed`. `show <id>` gives its recent `runs`,
+  each with `result`, `exit_status` and the path of its `log`, and the ids of
+  failed events under `failed`.
+- `test` runs the hook now, for real, on the newest matching event; `rerun`
+  tries a failed event once more. Both need the app open (`app_unavailable`,
+  or `hooks_not_running` when another Blixel runs the hooks) and refuse with
+  `hook_busy` while a run is under way. They answer when the command starts;
+  with `--wait`, when it ends. They exit 0 whatever the command did, so read
+  `result` and the `log`.
+
 ## Errors
 
 | exit | category | what to do |
@@ -235,6 +283,6 @@ pass the last handled line's `after` as `--after`.
 | 3 | authentication | Sign in (above). |
 | 4 | authorization | `forbidden`: this account can't see it. `permission_required`: see sharing. |
 | 5 | unavailable | Read `code`. Most mean "not now" (app closed, not in a meeting, reconnecting). |
-| 6 | incompatible | The app and CLI versions differ. Suggest `brew upgrade --cask blixel`. |
+| 6 | incompatible | The app and CLI versions differ. Suggest updating Blixel. |
 | 7 | storage | `secret_store_unavailable` (e.g. over SSH): sign in again with `BLIXEL_TOKEN_STORAGE=file`. |
 | 130/143 | cancelled | Interrupted. For chat or window, treat it as an unknown outcome. |

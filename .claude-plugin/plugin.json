@@ -1,7 +1,7 @@
 {
   "name": "blixel",
-  "version": "0.3.0",
-  "description": "Rooms, meeting chat, window sharing and transcripts through the blixel CLI.",
+  "version": "0.4.0",
+  "description": "Rooms, meeting chat, window sharing, transcripts, hooks and agent handoffs through the blixel CLI.",
   "author": {
     "name": "Blixel",
     "url": "https://blixel.app"
@@ -14,5 +14,28 @@
     "meetings",
     "transcripts",
     "screen sharing"
-  ]
+  ],
+  "experimental": {
+    "monitors": [
+      {
+        "name": "handoffs",
+        "command": "\"${CLAUDE_PLUGIN_ROOT}\"/bin/blixel agent follow",
+        "description": "Blixel handoffs",
+        "when": "on-skill-invoke:blixel:connect-agent"
+      }
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/skills/connect-agent/scripts/session-start.sh\""
+          }
+        ]
+      }
+    ]
+  }
 }

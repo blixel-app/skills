@@ -1,7 +1,7 @@
 {
   "name": "blixel",
-  "version": "0.3.0",
-  "description": "Rooms, meeting chat, window sharing and transcripts through the blixel CLI.",
+  "version": "0.4.0",
+  "description": "Rooms, meeting chat, window sharing, transcripts, hooks and agent handoffs through the blixel CLI.",
   "author": {
     "name": "Blixel",
     "url": "https://blixel.app"
@@ -18,8 +18,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Blixel",
-    "shortDescription": "Rooms, meeting chat, window sharing and transcripts",
-    "longDescription": "Uses the blixel CLI to create rooms and get their invite links, see who is in a room, post to the current meeting's chat, share windows into it, and search, read, export or follow transcripts recorded on this Mac.",
+    "shortDescription": "Rooms, meeting chat, transcripts, hooks and handoffs",
+    "longDescription": "Uses the blixel CLI to create rooms and get their invite links, see who is in a room, read, follow and post to the current meeting's chat, share windows into it, search, read, export or follow transcripts recorded on this Mac, and set up hooks that run a command when something happens in Blixel. It also connects this session to the call, so people in it can hand it spoken or typed requests.",
     "developerName": "Blixel",
     "category": "Productivity",
     "capabilities": [

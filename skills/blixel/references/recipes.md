@@ -91,3 +91,22 @@ app.
 `blixel connection list` shows each connection's `name`, `server` and `active`.
 Use `--connection <name>` for one command, or `blixel connection use <name>` to
 change the default (a local change, but tell the person).
+
+## Run something when a call's transcript ends
+
+1. Agree on the script with the person, for example `~/bin/blixel-notes.sh`:
+
+   ```sh
+   #!/bin/zsh
+   mkdir -p ~/Notes/Blixel
+   blixel transcript export "$BLIXEL_TRANSCRIPT_ID" --format md > ~/Notes/Blixel/"$BLIXEL_TRANSCRIPT_ID".md
+   ```
+
+   Make it executable. For one room only, get its id from `blixel room list`.
+2. With their yes:
+   `blixel hook add notes --type transcript.ended [--room <room-id>] --command ~/bin/blixel-notes.sh`
+3. With Blixel open, `blixel hook test notes --wait` runs it on the newest ended
+   transcript. Check `result`; if it isn't `ok`, read the `log` file.
+
+Hooks run only while Blixel is open. The person can also manage them in
+Settings › Hooks.
