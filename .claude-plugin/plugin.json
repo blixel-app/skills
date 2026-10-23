@@ -1,6 +1,6 @@
 {
   "name": "blixel",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Rooms, meeting chat, window sharing and transcripts through the blixel CLI.",
   "author": {
     "name": "Blixel",
@@ -19,7 +19,7 @@
     "monitors": [
       {
         "name": "handoffs",
-        "command": "blixel agent follow",
+        "command": "\"${CLAUDE_PLUGIN_ROOT}\"/bin/blixel agent follow",
         "description": "Blixel handoffs",
         "when": "on-skill-invoke:blixel:connect-agent"
       }

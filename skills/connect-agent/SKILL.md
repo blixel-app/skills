@@ -1,7 +1,7 @@
 ---
 name: connect-agent
 description: Connect this Claude Code or Codex session to the user's current Blixel meeting, so people in the call can hand it spoken or typed requests ("Blixel handoffs"); also checks or ends that connection. Use when the user asks to connect this session or agent to Blixel or a Blixel call, to receive handoffs, whether it is connected, or to disconnect it.
-allowed-tools: Bash(blixel agent connect*) Bash(blixel agent status*) Bash(blixel agent disconnect*) Bash(blixel agent follow)
+allowed-tools: Bash(blixel agent connect*) Bash(blixel agent status*) Bash(blixel agent disconnect*) Bash(blixel agent follow) Bash(${CLAUDE_SKILL_DIR}/scripts/blixel agent connect*) Bash(${CLAUDE_SKILL_DIR}/scripts/blixel agent status*) Bash(${CLAUDE_SKILL_DIR}/scripts/blixel agent disconnect*) Bash(${CLAUDE_SKILL_DIR}/scripts/blixel agent follow)
 ---
 
 # Connect agent
@@ -11,8 +11,13 @@ Disconnect. In any other agent, tell the user that connecting needs Claude Code 
 Codex, and stop.
 
 Connects this session to the meeting the Blixel app on this Mac is in. People in
-that meeting can then speak or type a request to this session from Blixel. The
-`blixel` command must be installed; see the `blixel` skill for that.
+that meeting can then speak or type a request to this session from Blixel.
+
+If the shell can't find `blixel` (`command not found`), run
+`${CLAUDE_SKILL_DIR}/scripts/blixel` (the `scripts/blixel` beside this file)
+wherever this skill says `blixel` from then on, in a Monitor's command too: it
+runs the CLI inside the Blixel app. If that prints "Blixel isn't installed", tell
+the user to get it at https://blixel.app.
 
 ## Blixel handoffs
 

@@ -10,11 +10,13 @@ and any other agent that reads `SKILL.md` skills.
 
 ## Requirements
 
-Blixel 0.12 or later, which puts the `blixel` command on your `PATH`:
+[Blixel](https://blixel.app) 0.12 or later on this Mac. Installing the plugin, or
+the skills, is the only setup: they find Blixel's `blixel` command themselves.
 
-```sh
-brew install --cask blixel-app/tap/blixel
-```
+To type `blixel` in your own terminal, install Blixel with Homebrew
+(`brew install --cask blixel-app/tap/blixel`) or with
+`curl -fsSL https://blixel.app/install.sh | sh`; both also put the command on your
+`PATH`.
 
 ## Install
 
@@ -92,3 +94,8 @@ Each platform has its own manifests, and both point at the same `skills/`:
 
 Installs are cached by `version`, so raise it in both `plugin.json` files
 together, or users of one platform keep the old skill.
+
+`skills/blixel/scripts/blixel` and `skills/connect-agent/scripts/blixel` are the
+same script, so each skill works installed on its own; change them together.
+`bin/blixel` links to the first, putting `blixel` on the Claude Code Bash tool's
+`PATH`.

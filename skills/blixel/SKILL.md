@@ -20,15 +20,17 @@ session, use the `connect-agent` skill (`blixel agent`).
 
 ## Before the first command
 
-1. `command -v blixel`. If it is missing, Blixel is installed with
-   `brew install --cask blixel-app/tap/blixel` (macOS 15+, Apple silicon). Ask
-   before installing.
+1. If the shell can't find `blixel` (`command not found`), run
+   `${CLAUDE_SKILL_DIR}/scripts/blixel` (the `scripts/blixel` beside this file)
+   wherever this skill says `blixel` from then on: it runs the CLI inside the
+   Blixel app. If that prints "Blixel isn't installed", tell the person to get it
+   at https://blixel.app.
 2. `blixel schema` lists every command with its `effect` and `requires`.
    `blixel schema <group> <command>` (separate words, e.g. `blixel schema chat send`)
    gives the exact arguments, result fields, error codes and retry notes. The
    installed CLI is the authority: read its schema before using a command for the
    first time rather than guessing flags. A command missing from the schema means
-   the CLI is older than this skill; suggest `brew upgrade --cask blixel`.
+   the CLI is older than this skill; suggest updating Blixel.
 
 ## Reading output
 
@@ -275,6 +277,6 @@ blixel hook rerun <id> <event-id> [--wait]
 | 3 | authentication | Sign in (above). |
 | 4 | authorization | `forbidden`: this account can't see it. `permission_required`: see sharing. |
 | 5 | unavailable | Read `code`. Most mean "not now" (app closed, not in a meeting, reconnecting). |
-| 6 | incompatible | The app and CLI versions differ. Suggest `brew upgrade --cask blixel`. |
+| 6 | incompatible | The app and CLI versions differ. Suggest updating Blixel. |
 | 7 | storage | `secret_store_unavailable` (e.g. over SSH): sign in again with `BLIXEL_TOKEN_STORAGE=file`. |
 | 130/143 | cancelled | Interrupted. For chat or window, treat it as an unknown outcome. |

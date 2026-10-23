@@ -2,7 +2,7 @@
 # After /clear or a compaction the conversation no longer holds the skill's
 # text, while the session's connection and monitor carry on: without it the
 # model refuses handoffs as background notifications.
-status=$(blixel agent status 2>/dev/null) || exit 0
+status=$("$(dirname "$0")/blixel" agent status 2>/dev/null) || exit 0
 # One JSON line with sorted keys: "session" is data's last key, and
 # connection_id sits in it only while this session is connected.
 case $status in
