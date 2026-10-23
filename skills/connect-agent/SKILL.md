@@ -71,16 +71,11 @@ On failure, stderr ends with `{"error":{"code",…}}`. By `code`:
 
 - `monitor_not_running`: nothing in this session follows Blixel's handoffs: the
   plugin's monitor does not run here, as in the Claude desktop app, or it stopped.
-  First check the settings that turn monitors off, which also turn off the Monitor
-  tool:
-  `env | grep -E '^(DISABLE_TELEMETRY|CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC|CLAUDE_CODE_USE_BEDROCK|CLAUDE_CODE_USE_VERTEX|CLAUDE_CODE_USE_FOUNDRY|DO_NOT_TRACK|DISABLE_GROWTHBOOK|CLAUDE_CODE_USE_ANTHROPIC_AWS|CLAUDE_CODE_USE_ANTHROPIC_GOOGLE_CLOUD|CLAUDE_CODE_USE_MANTLE|CLAUDE_CODE_CUSTOM_OAUTH_URL|CLAUDE_CODE_SAFE_MODE)='`;
-  monitors are also off on Amazon Bedrock, Google Cloud's Agent Platform and
-  Microsoft Foundry. If any applies, tell the user handoffs cannot reach this
-  session and name it. Otherwise start the Monitor tool with command
-  `blixel agent follow`, description `Blixel handoffs` and `timeout_ms` 1800000,
-  then run `blixel agent connect` again. If the Monitor tool is not available
-  here, tell the user handoffs cannot reach this session because it cannot run a
-  monitor.
+  Start the Monitor tool with command `blixel agent follow`, description
+  `Blixel handoffs` and `timeout_ms` 1800000, then run `blixel agent connect`
+  again. If the Monitor tool is not available here, tell the user handoffs cannot
+  reach this session because it cannot run a monitor; see
+  https://blixel.app/docs/agents/troubleshooting.
 - `socket_blocked`: Claude Code's sandbox blocks Blixel's socket. Ask the user to
   add `error.context.path` to `sandbox.network.allowUnixSockets` in their Claude
   Code settings, then connect again. Don't change their settings unless they ask.
