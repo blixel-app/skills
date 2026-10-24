@@ -55,8 +55,8 @@ and window sharing.
 
 ## Connecting Claude Code or Codex to a call
 
-Run `/blixel:connect-agent` in the Claude Code session that should take requests
-while Blixel is in a meeting. People in the call can then speak or type a request
+Run `/blixel:connect` in the Claude Code session that should take requests while
+Blixel is in a meeting, or ask it to connect to Blixel. People in the call can then speak or type a request
 to it from Blixel; each arrives in that session through its "Blixel handoffs"
 monitor as the message you set in Blixel's Settings › Agents, the request alone by
 default. The skill tells the agent it is a colleague's suggestion rather than your
@@ -64,15 +64,23 @@ instruction, and the agent asks you before anything destructive. A meeting has o
 connected session: connecting another replaces it. Leaving the room ends the
 connection.
 
-In the Claude Code CLI the plugin's monitor delivers the handoffs. Where plugin
-monitors don't run, as in the Claude desktop app, the skill starts a Monitor for
-them and starts it again each time Claude Code stops it after 30 minutes. Either
-way the session needs Claude Code monitors: they don't run when
-`DISABLE_TELEMETRY` or `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` is set, or on
-Amazon Bedrock, Google Cloud's Agent Platform or Microsoft Foundry. If handoffs
-stop arriving, run `/blixel:connect-agent` again. With Claude Code's Bash sandbox
-on, add the socket path that `blixel agent connect` reports to
-`sandbox.network.allowUnixSockets`.
+In Claude Code with mods on, in the terminal or the desktop app, the plugin's mod
+delivers each handoff as a prompt of its own, after any turn in progress, worded
+exactly as your message template in Blixel's Settings › Agents makes it. After you
+stop a turn with Esc, Claude Code holds back new prompts until you send a message,
+so a handoff waits for that, and the status line says so. `/blixel:connect
+[ask|direct]`, `/blixel:status` and `/blixel:disconnect` connect, check and
+disconnect without asking Claude, and the Blixel pane, which `/blixel:status`
+opens (and, in the desktop app, connecting), shows the connection and this
+session's handoffs. Without mods, those commands ask Claude to use the skill, and
+the plugin's monitor delivers the handoffs. Where plugin monitors don't run
+either, as in the Claude desktop app, the skill starts a Monitor for them and
+starts it again each time Claude Code stops it after 30 minutes. Without the mod,
+the session needs Claude Code monitors: they don't run when `DISABLE_TELEMETRY` or
+`CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` is set, or on Amazon Bedrock, Google
+Cloud's Agent Platform or Microsoft Foundry. If handoffs stop arriving, run
+`/blixel:connect` again. With Claude Code's Bash sandbox on, add the socket
+path that `blixel agent connect` reports to `sandbox.network.allowUnixSockets`.
 
 Installed as a skill only (`npx skills add`), connecting still works, but after `/clear` or a compaction ask the session to connect to Blixel again, or it will not act on the handoffs it keeps receiving.
 
@@ -95,6 +103,9 @@ Each platform has its own manifests, and both point at the same `skills/`:
 
 Installs are cached by `version`, so raise it in both `plugin.json` files
 together, or users of one platform keep the old skill.
+
+`hooks/register.tsx` is the mod; `claude plugin test .` runs its tests in `tests/`,
+and `claude plugin validate .` checks it the way Claude Code loads it.
 
 `skills/blixel/scripts/blixel` and `skills/connect-agent/scripts/blixel` are the
 same script, so each skill works installed on its own; change them together.

@@ -15,6 +15,7 @@
     "transcripts",
     "screen sharing"
   ],
+  "types": "./types/index.d.ts",
   "experimental": {
     "monitors": [
       {

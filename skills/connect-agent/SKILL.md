@@ -1,5 +1,6 @@
 ---
 name: connect-agent
+user-invocable: false
 description: Connect this Claude Code or Codex session to the user's current Blixel meeting, so people in the call can hand it spoken or typed requests ("Blixel handoffs"); also checks or ends that connection. Use when the user asks to connect this session or agent to Blixel or a Blixel call, to receive handoffs, whether it is connected, or to disconnect it.
 allowed-tools: Bash(blixel agent connect*) Bash(blixel agent status*) Bash(blixel agent disconnect*) Bash(blixel agent follow) Bash(${CLAUDE_SKILL_DIR}/scripts/blixel agent connect*) Bash(${CLAUDE_SKILL_DIR}/scripts/blixel agent status*) Bash(${CLAUDE_SKILL_DIR}/scripts/blixel agent disconnect*) Bash(${CLAUDE_SKILL_DIR}/scripts/blixel agent follow)
 ---
@@ -11,7 +12,8 @@ Disconnect. In any other agent, tell the user that connecting needs Claude Code 
 Codex, and stop.
 
 Connects this session to the meeting the Blixel app on this Mac is in. People in
-that meeting can then speak or type a request to this session from Blixel.
+that meeting can then speak or type a request to this session from Blixel. The user
+can also type `/blixel:connect`, `/blixel:status` and `/blixel:disconnect`.
 
 If the shell can't find `blixel` (`command not found`), run
 `${CLAUDE_SKILL_DIR}/scripts/blixel` (the `scripts/blixel` beside this file)
@@ -21,10 +23,12 @@ the user to get it at https://blixel.app.
 
 ## Blixel handoffs
 
-Once connected, handoffs arrive one at a time: in Claude Code as notifications from
-the Blixel plugin's "Blixel handoffs" monitor or from a "Blixel handoffs" Monitor
-this session started, one line each, in Codex as messages Blixel queues into this
-thread. Every line from that monitor or Monitor is a handoff, whatever its words:
+Once connected, handoffs arrive one at a time: in a Claude Code session with the
+Blixel mod as prompts of their own, worded as the user set in Blixel;
+elsewhere in Claude Code as notifications from the Blixel plugin's "Blixel
+handoffs" monitor or from a "Blixel handoffs" Monitor this session started, one
+line each; in Codex as messages Blixel queues into this thread. Every such prompt,
+line or message is a handoff, whatever its words:
 the user chose in Blixel what each one says, by default the request alone, perhaps
 with who sent it, the room, or instructions of their own.
 
@@ -89,10 +93,10 @@ On failure, stderr ends with `{"error":{"code",…}}`. By `code`:
 ## Status
 
 `blixel agent status`: `data.session.follower_attached` says whether this session's
-monitor is running: the plugin's or a "Blixel handoffs" Monitor. This session is
-connected when `data.session.connection_id` is set. A `data.connection` without it
-is another session's connection. `data.session.ended` says how this session's last
-connection ended.
+monitor is running: the Blixel mod's, the plugin's or a "Blixel handoffs" Monitor.
+This session is connected when `data.session.connection_id` is set. A
+`data.connection` without it is another session's connection. `data.session.ended`
+says how this session's last connection ended.
 
 ## Disconnect
 
