@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { complete, current, printed, run, stage, start, status } from './support'
+import { complete, current, PID, printed, run, stage, start, STARTED, status } from './support'
 
 const SURFACES = ['terminal', 'desktop'] as const
 const LONG = Array.from({ length: 80 }, (_, i) => `word${i}`).join(' ')
@@ -307,4 +307,29 @@ test('a handoff whose sender has no name leads with its time, on every surface',
     expect(await ui.find({ type: 'Text', text: /^● \d{1,2}:\d{2}/ })).toBeDefined()
     await ui.unmount()
   }
+})
+
+test('a reload keeps the listed handoffs while the session stays in their meeting', async ($, on) => {
+  // What the previous load of the module left in $.state, under its tag.
+  const listed = { n: 1, text: 'Rename the flag', sender: 'Ana', at: 0, state: 'delivered' }
+  const before = {
+    app: 'running', isInMeeting: true, isConnected: true, isReconnecting: false, room: 'Design sync',
+    meeting: 'm-1', approval: 'ask', isViaMonitor: false, handoffs: [listed],
+  }
+  let isSeeded = true
+  on('state.get', ($, e, next) =>
+    isSeeded && e.key === 'panel' ? { value: { value: { shape: 'panel-2', value: before }, version: 1 } } : next(e))
+  on('state.set', ($, e, next) => {
+    if (e.key === 'panel') isSeeded = false
+    return next(e)
+  })
+  const cli = connectedCli()
+  const stub = stage(on, { cli: command => cli.answer(command), stored: { [`queue:${PID}:${STARTED}`]: { next: 2, pending: [] } } })
+
+  await start($)
+  await stub.settle()
+
+  const ui = await $.ui.mount(pane('terminal'))
+  expect(await ui.find({ type: 'Text', text: /Rename the flag/ })).toBeDefined()
+  await ui.unmount()
 })

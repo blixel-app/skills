@@ -332,3 +332,32 @@ test('the status line names a room only once the app counts it as the meeting it
 
   expect(stub.status()).toBeUndefined()
 })
+
+test('the status line names the meeting beside a monitor that holds the handoffs', async ($, on) => {
+  const stub = stage(on, { cli: connectedIn('connected'), follower: 'refused', isLive: true })
+
+  await start($)
+  await stub.settle()
+
+  expect(stub.status()).toBe('✦ connected to Design sync, handoffs go to its monitor')
+})
+
+test('the status line drops the meeting once the app closes', async ($, on) => {
+  let isOpen = true
+  const connected = connectedIn('connected')
+  const stub = stage(on, {
+    cli: command =>
+      isOpen
+        ? connected(command)
+        : { exitCode: 1, stderr: '{"error":{"code":"app_unavailable","message":"The app is not running"}}\n' },
+  })
+
+  await start($)
+  await stub.settle()
+  expect(stub.status()).toBe('✦ connected to Design sync')
+
+  isOpen = false
+  await stub.clock.advance(15_000)
+  await stub.settle()
+  expect(stub.status()).toBeUndefined()
+})

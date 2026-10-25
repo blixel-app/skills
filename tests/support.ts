@@ -14,6 +14,8 @@ export type Setup = {
   printed?: string[]
   // Keeps the first follower running after `printed`, printing what `print` hands it.
   isLive?: boolean
+  // How the app answers the first follower; a refused one leaves the handoffs to a monitor.
+  follower?: 'attached' | 'refused'
   // Answers each prompt the mod submits; a string drops it with that reason.
   submit?: (text: string) => string | undefined | Promise<string | undefined>
   // Answers `blixel agent <command>` and `blixel room current` (as `current`);
@@ -107,7 +109,8 @@ export function stage(on: On, setup: Setup = {}) {
   on('process.spawn', async function* () {
     spawns += 1
     if (spawns === 1) {
-      yield { stream: 'stderr', text: '{"event":"follower","data":{"state":"attached"}}\n' }
+      const state = setup.follower ?? 'attached'
+      yield { stream: 'stderr', text: `{"event":"follower","data":{"state":"${state}"}}\n` }
       for (const text of setup.printed ?? []) yield { stream: 'stdout', text }
       while (setup.isLive) {
         while (later.length > 0) yield { stream: 'stdout', text: later.shift() ?? '' }
