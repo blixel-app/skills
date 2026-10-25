@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { complete, run, stage, start, status } from './support'
+import { complete, current, printed, run, stage, start, status } from './support'
 
 const SURFACES = ['terminal', 'desktop'] as const
 const LONG = Array.from({ length: 80 }, (_, i) => `word${i}`).join(' ')
@@ -26,8 +26,11 @@ const connectedCli = () => {
   let isConnected = true
   return {
     calls: [] as string[],
+    meeting: 'm-1',
+    room: 'Design sync',
     answer(command: string) {
       this.calls.push(command)
+      if (command === 'current') return { exitCode: 0, stdout: current('connected', this.room, this.meeting) }
       if (command === 'disconnect') isConnected = false
       if (command === 'connect') isConnected = true
       if (command === 'disconnect' || command === 'connect') {
@@ -36,8 +39,12 @@ const connectedCli = () => {
       return {
         exitCode: 0,
         stdout: isConnected
-          ? status({ connection_id: 'c-1', follower_attached: true }, { approval_mode: 'ask' })
-          : status({ follower_attached: true }),
+          ? status(
+              { connection_id: 'c-1', follower_attached: true },
+              { meeting_id: this.meeting, approval_mode: 'ask' },
+              this.meeting,
+            )
+          : status({ follower_attached: true }, null, this.meeting),
       }
     },
   }
@@ -86,14 +93,14 @@ test('the pane shows the connection and ends it, on every surface', async ($, on
     await run($, 'blixel:connect')
     await stub.settle()
     const ui = await $.ui.mount(pane(surface))
-    expect(await ui.find({ type: 'Text', text: /Connected to your meeting/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /Connected to Design sync/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /asks you before each handoff/ })).toBeDefined()
     expect((await ui.find({ key: 'connection' }))?.props.label).toBe('Disconnect')
 
     await ui.press({ key: 'connection' })
     await stub.settle()
     expect(cli.calls).toContain('disconnect')
-    expect(await ui.find({ type: 'Text', text: /Not connected/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /In Design sync/ })).toBeDefined()
     expect((await ui.find({ key: 'connection' }))?.props.label).toBe('Connect')
     await ui.unmount()
   }
@@ -117,7 +124,7 @@ test("the pane says when Blixel isn't running, with nothing to press", async ($,
 
 test('the pane lists each handoff with what became of it', async ($, on) => {
   const answers = ['the prompt was removed from the queue before it ran']
-  const stub = stage(on, { printed: ['Rename the flag\n'], submit: () => answers.shift() })
+  const stub = stage(on, { printed: [printed('Rename the flag')], submit: () => answers.shift() })
 
   await start($)
   await stub.settle()
@@ -143,7 +150,7 @@ test('the pane lists each handoff with what became of it', async ($, on) => {
 })
 
 test('a long handoff in the pane shows its opening until it is opened', async ($, on) => {
-  const stub = stage(on, { printed: [`${LONG}\n`] })
+  const stub = stage(on, { printed: [printed(LONG)] })
 
   await start($)
   await stub.settle()
@@ -159,4 +166,50 @@ test('a long handoff in the pane shows its opening until it is opened', async ($
     expect(await ui.find({ type: 'Text', text: /word79/ })).toBeUndefined()
     await ui.unmount()
   }
+})
+
+test('each handoff in the pane names who sent it, on every surface', async ($, on) => {
+  const stub = stage(on, { printed: [printed('Rename the flag', 'Ana', 1), printed('Run the tests', 'Bea', 2)] })
+
+  await start($)
+  await stub.settle()
+
+  for (const surface of SURFACES) {
+    const ui = await $.ui.mount(pane(surface))
+    expect(await ui.find({ type: 'Text', text: /Ana · \d{1,2}:\d{2}/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /Bea · \d{1,2}:\d{2}/ })).toBeDefined()
+    await ui.unmount()
+  }
+})
+
+test("the pane lists one meeting's handoffs: a connection to another starts it empty", async ($, on) => {
+  const cli = connectedCli()
+  const stub = stage(on, { cli: command => cli.answer(command), printed: [printed('Rename the flag')] })
+  const listed = async () => {
+    const ui = await $.ui.mount(pane('terminal'))
+    const found = (await ui.find({ type: 'Text', text: /Rename the flag/ })) !== undefined
+    await ui.unmount()
+    return found
+  }
+
+  await start($)
+  await stub.settle()
+  expect(await listed()).toBe(true)
+
+  await run($, 'blixel:disconnect')
+  await stub.settle()
+  expect(await listed()).toBe(true)
+
+  await run($, 'blixel:connect')
+  await stub.settle()
+  expect(await listed()).toBe(true)
+
+  cli.meeting = 'm-2'
+  cli.room = 'Standup'
+  await run($, 'blixel:connect')
+  await stub.settle()
+  expect(await listed()).toBe(false)
+  const ui = await $.ui.mount(pane('terminal'))
+  expect(await ui.find({ type: 'Text', text: /Connected to Standup/ })).toBeDefined()
+  await ui.unmount()
 })

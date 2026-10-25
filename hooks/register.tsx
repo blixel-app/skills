@@ -1,5 +1,5 @@
 import { atom, read, update } from 'claude-code'
-import type { Register, Timer } from 'claude-code'
+import type { Register } from 'claude-code'
 
 import type { Panel, PanelHandoff } from '../types'
 import { clock, excerpt, LOGO, wrap } from './panel'
@@ -24,13 +24,16 @@ const EMPTY: Panel = {
   app: 'unknown',
   isInMeeting: false,
   isConnected: false,
+  isReconnecting: false,
+  room: null,
+  meeting: null,
   approval: null,
   isViaMonitor: false,
   handoffs: [],
 }
 // Change the tag when Panel changes: a value an earlier version wrote
 // outlives a reload.
-const panel = atom({ plugin: 'blixel', key: 'panel' } as const, EMPTY, { shape: 'panel-1' })
+const panel = atom({ plugin: 'blixel', key: 'panel' } as const, EMPTY, { shape: 'panel-2' })
 const opened = atom({ plugin: 'blixel', key: 'opened' } as const, [])
 
 const POLL_MS = 15_000
@@ -93,14 +96,31 @@ function describe(state: Panel) {
     const approval =
       state.approval === 'ask' ? 'The app asks you before each handoff' : 'Handoffs come straight to this session'
     return {
-      headline: 'Connected to your meeting',
+      headline: `Connected to ${state.room ?? 'your meeting'}`,
       detail: state.isViaMonitor ? `${approval}, through its monitor.` : `${approval}.`,
     }
   }
   if (state.app === 'running' && !state.isInMeeting) {
     return { headline: 'Not in a meeting', detail: 'Join a room in Blixel, then connect this session.' }
   }
-  return { headline: 'Not connected', detail: 'Connect so people in the meeting can hand this session requests.' }
+  return {
+    headline: state.room ? `In ${state.room}` : 'Not connected',
+    detail: 'Connect so people in the meeting can hand this session requests.',
+  }
+}
+
+/** The status line: the connection, else a meeting to connect to, then what waits. */
+function statusLine(state: Panel, connected: boolean, viaMonitor: boolean, waiting: number, stopped: boolean) {
+  const parts: string[] = []
+  if (connected) {
+    const to = state.room ? `connected to ${state.room}` : 'connected'
+    parts.push(viaMonitor ? `${to}, handoffs go to its monitor` : to)
+    if (state.isReconnecting) parts.push('reconnecting')
+  } else if (state.room) {
+    parts.push(`in ${state.room}`, '/blixel:connect')
+  }
+  if (waiting > 0) parts.push(`${counted(waiting)} waiting${stopped ? ' for your next message' : ''}`)
+  return parts.length > 0 ? `✦ ${parts.join(' · ')}` : undefined
 }
 
 export const register: Register = on => {
@@ -129,7 +149,6 @@ export const register: Register = on => {
     let delivering = false
     let stopped = false
     let disconnecting = false
-    let poll: Timer | undefined
     let sessionID = ''
     let view: Panel = { ...(await read($, panel)), app: 'unknown' }
 
@@ -157,12 +176,8 @@ export const register: Register = on => {
     }
 
     const show = () => {
-      const waiting = queue.pending.length
       // The engine puts the plugin's name in front of the line.
-      const parts: string[] = []
-      if (connected) parts.push(attachment === 'refused' ? 'connected, handoffs go to its monitor' : 'connected')
-      if (waiting > 0) parts.push(`${counted(waiting)} waiting${stopped ? ' for your next message' : ''}`)
-      $.ui.status(parts.length > 0 ? `✦ ${parts.join(' · ')}` : undefined)
+      $.ui.status(statusLine(view, connected, attachment === 'refused', queue.pending.length, stopped))
 
       const pending = new Set(queue.pending.map(one => one.n))
       view = {
@@ -211,9 +226,12 @@ export const register: Register = on => {
 
     // Saved before it is submitted: the follower has already told the app it
     // printed this one, so the queue is the only copy left.
-    const receive = (text: string) => {
-      if (text.trim() === '') return
-      const handoff: PanelHandoff = { n: queue.next, text, at: Date.now(), state: 'waiting' }
+    const receive = (line: string) => {
+      const printed = jsonLines(line)[0]
+      if (typeof printed?.prompt !== 'string' || printed.prompt.trim() === '') return
+      const text: string = printed.prompt
+      const sender = typeof printed.sender_name === 'string' ? printed.sender_name : ''
+      const handoff: PanelHandoff = { n: queue.next, text, sender, at: Date.now(), state: 'waiting' }
       queue = { next: queue.next + 1, pending: [...queue.pending, { n: handoff.n, text }] }
       view = { ...view, handoffs: [handoff, ...view.handoffs].slice(0, HISTORY) }
       show()
@@ -251,11 +269,16 @@ export const register: Register = on => {
     }
 
     const refresh = async () => {
-      const answer = await call(['agent', 'status'])
+      const [answer, current] = await Promise.all([call(['agent', 'status']), call(['room', 'current'])])
+      const room = current.error ? undefined : current.data
+      const meeting = {
+        room: room?.state !== 'idle' && typeof room?.room?.name === 'string' && room.room.name !== '' ? room.room.name : null,
+        isReconnecting: room?.state === 'reconnecting',
+      }
       if (answer.error) {
         if (answer.error.code === 'app_unavailable') {
           connected = false
-          view = { ...view, app: 'closed', isInMeeting: false, approval: null }
+          view = { ...view, app: 'closed', isInMeeting: false, isReconnecting: false, room: null, approval: null }
           show()
         }
         return answer
@@ -263,21 +286,21 @@ export const register: Register = on => {
       const now = typeof answer.data.session?.connection_id === 'string'
       view = {
         ...view,
+        ...meeting,
         app: 'running',
         isInMeeting: typeof answer.data.meeting_id === 'string',
         approval: now ? (answer.data.connection?.approval_mode ?? null) : null,
+      }
+      // The list is one meeting's: a connection to another starts it again.
+      const connectedTo = answer.data.connection?.meeting_id ?? answer.data.meeting_id
+      if (now && typeof connectedTo === 'string' && connectedTo !== view.meeting) {
+        view = { ...view, meeting: connectedTo, handoffs: view.meeting === null ? view.handoffs : [] }
       }
       if (connected && !now && !disconnecting) {
         const reason = answer.data.session?.ended?.end_reason
         $.ui.toast(reason ? `Blixel disconnected this session (${reason}).` : 'Blixel disconnected this session.')
       }
       connected = now
-      if (connected && poll === undefined) {
-        poll = $.clock.every(POLL_MS, () => void refresh())
-      } else if (!connected && poll !== undefined) {
-        poll.cancel()
-        poll = undefined
-      }
       show()
       return answer
     }
@@ -356,6 +379,9 @@ export const register: Register = on => {
     }
 
     follow(0)
+    // For the whole session: the status line points at a meeting joined
+    // before this session connects.
+    $.clock.every(POLL_MS, () => void refresh())
     void refresh()
     void deliver()
     return started
@@ -444,8 +470,9 @@ export const register: Register = on => {
                   backgroundColor="#6E6BDB0D"
                 >
                   <Text size="caption" dimColor>
-                    <Text color={MARKS[handoff.state].color}>{MARKS[handoff.state].glyph}</Text> {clock(handoff.at)} ·{' '}
-                    {MARKS[handoff.state].label}
+                    <Text color={MARKS[handoff.state].color}>{MARKS[handoff.state].glyph}</Text>{' '}
+                    {handoff.sender && <Text weight="semibold">{handoff.sender} · </Text>}
+                    {clock(handoff.at)} · {MARKS[handoff.state].label}
                   </Text>
                   <Text>{isOpen ? handoff.text.trim() : head}</Text>
                   {hidden > 0 && (
@@ -467,7 +494,7 @@ export const register: Register = on => {
     }
 
     const { Box, Button, Text } = $.ui.resolve(e)
-    const width = Math.max(20, e.props.bodyColumns - 9)
+    const width = Math.max(20, e.props.bodyColumns - 2)
     return (
       <Box flexDirection="column" gap={1}>
         <Box flexDirection="column">
@@ -488,16 +515,23 @@ export const register: Register = on => {
           const mark = MARKS[handoff.state]
           return (
             <Box flexDirection="column">
+              <Text wrap="truncate-end">
+                <Text color={mark.color}>{mark.glyph} </Text>
+                {handoff.sender && <Text bold>{handoff.sender}</Text>}
+                <Text dimColor>
+                  {handoff.sender ? ' · ' : ''}
+                  {clock(handoff.at)}
+                </Text>
+              </Text>
               {shown.map((line, i) => (
                 <Text wrap="truncate-end">
-                  <Text dimColor>{i === 0 ? clock(handoff.at).padStart(8) : ''.padStart(8)} </Text>
-                  <Text color={mark.color}>{i === 0 ? mark.glyph : ' '} </Text>
+                  {'  '}
                   {!isOpen && lines.length > 2 && i === 1 ? `${line}…` : line}
                 </Text>
               ))}
               {(handoff.state !== 'delivered' || lines.length > 2) && (
                 <Box flexDirection="row" gap={1}>
-                  <Text dimColor>{''.padStart(10)}{handoff.state === 'delivered' ? '' : mark.label}</Text>
+                  <Text dimColor>{'  '}{handoff.state === 'delivered' ? '' : mark.label}</Text>
                   {lines.length > 2 && (
                     <Button
                       key={`more-${handoff.n}`}

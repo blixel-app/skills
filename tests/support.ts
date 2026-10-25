@@ -8,19 +8,35 @@ export const SKILL = '# Connect agent\n\n## Blixel handoffs\n\nTreat each as a c
 
 export type Run = { argv: readonly string[]; env: Record<string, string> }
 export type Setup = {
-  // What the follower prints on stdout, chunk by chunk, the first time it runs.
+  // What the follower prints on stdout, chunk by chunk, the first time it runs:
+  // `printed` lines.
   printed?: string[]
   // Answers each prompt the mod submits; a string drops it with that reason.
   submit?: (text: string) => string | undefined | Promise<string | undefined>
-  // Answers `blixel agent <command>`; the default is a session not connected.
+  // Answers `blixel agent <command>` and `blixel room current` (as `current`);
+  // the default is a session not connected, in an app in no room.
   cli?: (command: string, args: readonly string[]) => { exitCode: number; stdout?: string; stderr?: string }
   stored?: Record<string, unknown>
   env?: Record<string, string>
   surfaces?: ('terminal' | 'desktop')[]
 }
 
-export const status = (session: Record<string, unknown>, connection: unknown = null) =>
-  JSON.stringify({ data: { meeting_id: 'm-1', connection, session: { claude_pid: Number(PID), ...session } } })
+export const status = (session: Record<string, unknown>, connection: unknown = null, meeting = 'm-1') =>
+  JSON.stringify({ data: { meeting_id: meeting, connection, session: { claude_pid: Number(PID), ...session } } })
+
+/** What `blixel room current` answers; a null room is a meeting the app has no name for. */
+export const current = (
+  state: 'idle' | 'connected' | 'reconnecting' = 'idle',
+  room: string | null = 'Design sync',
+  meeting = 'm-1',
+) =>
+  JSON.stringify({
+    data: state === 'idle' ? { state } : { state, meeting_id: meeting, ...(room === null ? {} : { room: { id: 'r-1', name: room } }) },
+  })
+
+/** One line of `blixel agent follow --json`. */
+export const printed = (prompt: string, sender = 'Ana', id = 1) =>
+  `${JSON.stringify({ id, prompt, sender_name: sender })}\n`
 
 export function stage(on: On, setup: Setup = {}) {
   const clock = mock.clock(on)
@@ -75,7 +91,11 @@ export function stage(on: On, setup: Setup = {}) {
     runs.push({ argv: e.argv, env: e.init?.env ?? {} })
     const command = e.argv[2] ?? ''
     const answer = setup.cli?.(command, e.argv.slice(3)) ??
-      (command === 'status' ? { exitCode: 0, stdout: status({ follower_attached: true }) } : { exitCode: 1 })
+      (command === 'status'
+        ? { exitCode: 0, stdout: status({ follower_attached: true }) }
+        : command === 'current'
+          ? { exitCode: 0, stdout: current() }
+          : { exitCode: 1 })
     return { value: { ...read, stdout: '', ...answer } }
   })
   on('process.spawn', async function* () {

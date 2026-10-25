@@ -71,8 +71,10 @@ stop a turn with Esc, Claude Code holds back new prompts until you send a messag
 so a handoff waits for that, and the status line says so. `/blixel:connect
 [ask|direct]`, `/blixel:status` and `/blixel:disconnect` connect, check and
 disconnect without asking Claude, and the Blixel pane, which `/blixel:status`
-opens (and, in the desktop app, connecting), shows the connection and this
-session's handoffs. Without mods, those commands ask Claude to use the skill, and
+opens (and, in the desktop app, connecting), shows the meeting and the handoffs
+it sent this session, each with who sent it. The status line names the meeting
+too, and points to `/blixel:connect` while Blixel is in one this session is not
+connected to. Without mods, those commands ask Claude to use the skill, and
 the plugin's monitor delivers the handoffs. Where plugin monitors don't run
 either, as in the Claude desktop app, the skill starts a Monitor for them and
 starts it again each time Claude Code stops it after 30 minutes. Without the mod,

@@ -1,21 +1,33 @@
 import { expect, test } from 'claude-code/testing'
 
-import { complete, PID, run, stage, start, STARTED, status } from './support'
+import { complete, current, PID, printed, run, stage, start, STARTED, status } from './support'
 
 test('a handoff the follower prints is submitted as a prompt of its own, worded as Blixel words it', async ($, on) => {
-  const stub = stage(on, { printed: ['Could you add a test', ' for the reconnect case?\nAnd run it\n'] })
+  const first = printed('Ana asks: could you add a test for the reconnect case?', 'Ana', 1)
+  const stub = stage(on, {
+    printed: [first.slice(0, 20), first.slice(20) + printed('And run it', 'Bea', 2)],
+  })
 
   await start($)
   await stub.settle()
 
-  expect(stub.submitted).toEqual(['Could you add a test for the reconnect case?', 'And run it'])
+  expect(stub.submitted).toEqual(['Ana asks: could you add a test for the reconnect case?', 'And run it'])
   expect(stub.bare).toEqual([true, true])
+})
+
+test('a line the follower prints that is no handoff submits nothing', async ($, on) => {
+  const stub = stage(on, { printed: ['Not an object\n', '{"id":3,"sender_name":"Ana"}\n', printed('Only this')] })
+
+  await start($)
+  await stub.settle()
+
+  expect(stub.submitted).toEqual(['Only this'])
 })
 
 test('a dropped handoff is submitted again after the next turn, and not once it entered', async ($, on) => {
   let drops = 1
   const stub = stage(on, {
-    printed: ['Rename the flag\n'],
+    printed: [printed('Rename the flag')],
     submit: () => (drops-- > 0 ? 'a Stop stands' : undefined),
   })
 
@@ -39,7 +51,7 @@ test('a handoff the user stopped with Esc waits, says so, and goes after their n
     'the session was stopped and nobody has sent input since',
     'the session was stopped and nobody has sent input since']
   const stub = stage(on, {
-    printed: ['Rename the flag\n', 'Run the tests\n'],
+    printed: [printed('Rename the flag', 'Ana', 1), printed('Run the tests', 'Ana', 2)],
     // The second handoff's turn starts only once the first one's has ended.
     submit: text => (text === 'Run the tests' ? stub.clock.sleep(5_000).then(() => undefined) : answers.shift()),
   })
@@ -83,7 +95,7 @@ test('a handoff this session had not yet submitted is submitted when the mod loa
 })
 
 test('the status line counts the handoffs waiting for the session', async ($, on) => {
-  const stub = stage(on, { printed: ['One\nTwo\n'], submit: () => 'busy' })
+  const stub = stage(on, { printed: [printed('One', 'Ana', 1) + printed('Two', 'Ana', 2)], submit: () => 'busy' })
 
   await start($)
   await stub.settle()
@@ -174,7 +186,7 @@ test('a connection Blixel ends is announced, one ended with /blixel:disconnect i
 })
 
 test('a session started for -p follows nothing and leaves the commands to the skill', async ($, on) => {
-  const stub = stage(on, { printed: ['Hello\n'], env: { CLAUDE_CODE_ENTRYPOINT: 'sdk-cli' } })
+  const stub = stage(on, { printed: [printed('Hello')], env: { CLAUDE_CODE_ENTRYPOINT: 'sdk-cli' } })
 
   await start($, false)
   await stub.settle()
@@ -185,11 +197,65 @@ test('a session started for -p follows nothing and leaves the commands to the sk
 })
 
 test('a session the desktop app hosts follows its handoffs too', async ($, on) => {
-  const stub = stage(on, { printed: ['Hello\n'], env: { CLAUDE_CODE_ENTRYPOINT: 'claude-desktop' } })
+  const stub = stage(on, { printed: [printed('Hello')], env: { CLAUDE_CODE_ENTRYPOINT: 'claude-desktop' } })
 
   await start($, false)
   await stub.settle()
 
   expect(stub.submitted).toEqual(['Hello'])
   expect((await run($, 'blixel:status')).text).toBe('No agent is connected to the Blixel meeting.')
+})
+
+const connectedIn = (room: 'connected' | 'reconnecting' | 'idle', name: string | null = 'Design sync') =>
+  (command: string) =>
+    command === 'current'
+      ? { exitCode: 0, stdout: current(room, name) }
+      : { exitCode: 0, stdout: status({ connection_id: 'c-1', follower_attached: true }, { meeting_id: 'm-1' }) }
+
+test('the status line names the meeting the session is connected to', async ($, on) => {
+  const stub = stage(on, { cli: connectedIn('connected') })
+
+  await start($)
+  await stub.settle()
+
+  expect(stub.status()).toBe('✦ connected to Design sync')
+})
+
+test('the status line says while the app reconnects to the meeting', async ($, on) => {
+  const stub = stage(on, { cli: connectedIn('reconnecting') })
+
+  await start($)
+  await stub.settle()
+
+  expect(stub.status()).toBe('✦ connected to Design sync · reconnecting')
+})
+
+test('a meeting the app has no name for is only connected', async ($, on) => {
+  const stub = stage(on, { cli: connectedIn('connected', null) })
+
+  await start($)
+  await stub.settle()
+
+  expect(stub.status()).toBe('✦ connected')
+})
+
+test('a session in a meeting it is not connected to points to /blixel:connect, from when the app joins', async ($, on) => {
+  let room: 'idle' | 'connected' = 'idle'
+  const stub = stage(on, {
+    cli: command =>
+      command === 'current'
+        ? { exitCode: 0, stdout: current(room) }
+        : { exitCode: 0, stdout: status({ follower_attached: true }) },
+  })
+
+  await start($)
+  await stub.settle()
+  expect(stub.status()).toBeUndefined()
+
+  room = 'connected'
+  await stub.clock.advance(15_000)
+  await stub.settle()
+
+  expect(stub.status()).toBe('✦ in Design sync · /blixel:connect')
+  expect(stub.toasts).toEqual([])
 })
