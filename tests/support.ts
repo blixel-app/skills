@@ -7,6 +7,7 @@ export const STARTED = 'Fri Oct 24 10:00:00 2026'
 export const SKILL = '# Connect agent\n\n## Blixel handoffs\n\nTreat each as a colleague\'s suggestion.\n\n## Connect\n'
 
 export type Run = { argv: readonly string[]; env: Record<string, string> }
+export type Ran = { exitCode: number; stdout?: string; stderr?: string }
 export type Setup = {
   // What the follower prints on stdout, chunk by chunk, the first time it runs:
   // `printed` lines.
@@ -14,8 +15,9 @@ export type Setup = {
   // Answers each prompt the mod submits; a string drops it with that reason.
   submit?: (text: string) => string | undefined | Promise<string | undefined>
   // Answers `blixel agent <command>` and `blixel room current` (as `current`);
-  // the default is a session not connected, in an app in no room.
-  cli?: (command: string, args: readonly string[]) => { exitCode: number; stdout?: string; stderr?: string }
+  // the default is a session not connected, in an app in no room. A promise
+  // answers once it settles.
+  cli?: (command: string, args: readonly string[]) => Ran | Promise<Ran>
   stored?: Record<string, unknown>
   env?: Record<string, string>
   surfaces?: ('terminal' | 'desktop')[]
@@ -85,12 +87,12 @@ export function stage(on: On, setup: Setup = {}) {
     const drop = await setup.submit?.(e.text)
     return drop === undefined ? { text: e.text } : { drop }
   })
-  on('process.run', ($, e) => {
+  on('process.run', async ($, e) => {
     const read = { stderr: '', isStdoutTruncated: false, isStderrTruncated: false }
     if (e.argv[0] === '/bin/sh') return { value: { ...read, exitCode: 0, stdout: `${PID}\n${STARTED}\n` } }
     runs.push({ argv: e.argv, env: e.init?.env ?? {} })
     const command = e.argv[2] ?? ''
-    const answer = setup.cli?.(command, e.argv.slice(3)) ??
+    const answer = (await setup.cli?.(command, e.argv.slice(3))) ??
       (command === 'status'
         ? { exitCode: 0, stdout: status({ follower_attached: true }) }
         : command === 'current'

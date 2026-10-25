@@ -259,3 +259,37 @@ test('a session in a meeting it is not connected to points to /blixel:connect, f
   expect(stub.status()).toBe('✦ in Design sync · /blixel:connect')
   expect(stub.toasts).toEqual([])
 })
+
+test('an answer the app gave before a connect does not undo the connect when it arrives after it', async ($, on) => {
+  let connected = false
+  let isSlow = false
+  const stub = stage(on, {
+    cli: command => {
+      if (command === 'connect') {
+        connected = true
+        return { exitCode: 0, stdout: JSON.stringify({ data: { outcome: 'connected', replaced: null } }) }
+      }
+      const answer =
+        command === 'current'
+          ? { exitCode: 0, stdout: current('connected') }
+          : connected
+            ? { exitCode: 0, stdout: status({ connection_id: 'c-1', follower_attached: true }, { meeting_id: 'm-1' }) }
+            : { exitCode: 0, stdout: status({ follower_attached: true }) }
+      return isSlow ? stub.clock.sleep(10_000).then(() => answer) : answer
+    },
+  })
+
+  await start($)
+  await stub.settle()
+  isSlow = true
+  await stub.clock.advance(15_000)
+  isSlow = false
+  await run($, 'blixel:connect')
+  await stub.settle()
+  expect(stub.status()).toBe('✦ connected to Design sync')
+
+  await stub.clock.advance(10_000)
+  await stub.settle()
+  expect(stub.status()).toBe('✦ connected to Design sync')
+  expect(stub.toasts).toEqual([])
+})

@@ -268,8 +268,14 @@ export const register: Register = on => {
       })()
     }
 
+    // Refreshes overlap (the poll, a command, the skill's Bash call): an
+    // answer that lands after a later refresh's says what is no longer so.
+    let asked = 0
+    let answered = 0
     const refresh = async () => {
+      const n = (asked += 1)
       const [answer, current] = await Promise.all([call(['agent', 'status']), call(['room', 'current'])])
+      if (n < answered) return answer
       const room = current.error ? undefined : current.data
       const meeting = {
         room: room?.state !== 'idle' && typeof room?.room?.name === 'string' && room.room.name !== '' ? room.room.name : null,
@@ -277,12 +283,14 @@ export const register: Register = on => {
       }
       if (answer.error) {
         if (answer.error.code === 'app_unavailable') {
+          answered = n
           connected = false
           view = { ...view, app: 'closed', isInMeeting: false, isReconnecting: false, room: null, approval: null }
           show()
         }
         return answer
       }
+      answered = n
       const now = typeof answer.data.session?.connection_id === 'string'
       view = {
         ...view,
