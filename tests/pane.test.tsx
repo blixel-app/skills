@@ -294,3 +294,17 @@ test("a handoff from the meeting the session left is not listed once the skill's
   expect(await ui.find({ type: 'Text', text: /Connected to Design sync/ })).toBeDefined()
   await ui.unmount()
 })
+
+test('a handoff whose sender has no name leads with its time, on every surface', async ($, on) => {
+  const stub = stage(on, { printed: [printed('Rename the flag', '')] })
+
+  await start($)
+  await stub.settle()
+
+  for (const surface of SURFACES) {
+    const ui = await $.ui.mount(pane(surface))
+    expect(await ui.find({ type: 'Text', text: /Rename the flag/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /^● \d{1,2}:\d{2}/ })).toBeDefined()
+    await ui.unmount()
+  }
+})
