@@ -280,11 +280,6 @@ export const register: Register = on => {
         () => (unanswered -= 1),
       )
       if (n < answered) return answer
-      const room = current.error ? undefined : current.data
-      const meeting = {
-        room: room?.state !== 'idle' && typeof room?.room?.name === 'string' && room.room.name !== '' ? room.room.name : null,
-        isReconnecting: room?.state === 'reconnecting',
-      }
       if (answer.error) {
         if (answer.error.code === 'app_unavailable') {
           answered = n
@@ -295,10 +290,14 @@ export const register: Register = on => {
         return answer
       }
       answered = n
+      // Each answer is read apart, and the app tells its agents about a
+      // meeting after it joins: a room is the meeting both name, or none.
+      const room = current.error || current.data.meeting_id !== answer.data.meeting_id ? undefined : current.data
       const now = typeof answer.data.session?.connection_id === 'string'
       view = {
         ...view,
-        ...meeting,
+        room: room?.state !== 'idle' && typeof room?.room?.name === 'string' && room.room.name !== '' ? room.room.name : null,
+        isReconnecting: room?.state === 'reconnecting',
         app: 'running',
         isInMeeting: typeof answer.data.meeting_id === 'string',
         approval: now ? (answer.data.connection?.approval_mode ?? null) : null,

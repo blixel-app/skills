@@ -318,3 +318,17 @@ test('the poll does not ask again while the app has not answered it', async ($, 
   await stub.settle()
   expect(asked()).toBe(3)
 })
+
+test('the status line names a room only once the app counts it as the meeting its agents are in', async ($, on) => {
+  const stub = stage(on, {
+    cli: command =>
+      command === 'current'
+        ? { exitCode: 0, stdout: current('connected', 'Design sync', 'm-2') }
+        : { exitCode: 0, stdout: status({ follower_attached: true }, null, null as never) },
+  })
+
+  await start($)
+  await stub.settle()
+
+  expect(stub.status()).toBeUndefined()
+})
