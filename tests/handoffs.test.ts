@@ -293,3 +293,28 @@ test('an answer the app gave before a connect does not undo the connect when it 
   expect(stub.status()).toBe('✦ connected to Design sync')
   expect(stub.toasts).toEqual([])
 })
+
+test('the poll does not ask again while the app has not answered it', async ($, on) => {
+  const stub = stage(on, {
+    cli: command => {
+      const answer = command === 'current' ? { exitCode: 0, stdout: current() } : { exitCode: 0, stdout: status({}) }
+      return stub.clock.sleep(20_000).then(() => answer)
+    },
+  })
+  const asked = () => stub.runs.filter(run => run.argv[2] === 'status').length
+
+  await start($)
+  await stub.clock.advance(20_000)
+  await stub.settle()
+  expect(asked()).toBe(1)
+
+  // The tick at 15 s found the first answer still out; the one at 30 s asks,
+  // and its answer is still out at 45 s.
+  await stub.clock.advance(25_000)
+  await stub.settle()
+  expect(asked()).toBe(2)
+
+  await stub.clock.advance(15_000)
+  await stub.settle()
+  expect(asked()).toBe(3)
+})

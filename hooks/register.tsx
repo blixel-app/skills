@@ -272,9 +272,13 @@ export const register: Register = on => {
     // answer that lands after a later refresh's says what is no longer so.
     let asked = 0
     let answered = 0
+    let unanswered = 0
     const refresh = async () => {
       const n = (asked += 1)
-      const [answer, current] = await Promise.all([call(['agent', 'status']), call(['room', 'current'])])
+      unanswered += 1
+      const [answer, current] = await Promise.all([call(['agent', 'status']), call(['room', 'current'])]).finally(
+        () => (unanswered -= 1),
+      )
       if (n < answered) return answer
       const room = current.error ? undefined : current.data
       const meeting = {
@@ -388,8 +392,11 @@ export const register: Register = on => {
 
     follow(0)
     // For the whole session: the status line points at a meeting joined
-    // before this session connects.
-    $.clock.every(POLL_MS, () => void refresh())
+    // before this session connects. A tick while an answer is still out
+    // would only start two more processes waiting behind it.
+    $.clock.every(POLL_MS, () => {
+      if (unanswered === 0) void refresh()
+    })
     void refresh()
     void deliver()
     return started
