@@ -213,3 +213,84 @@ test("the pane lists one meeting's handoffs: a connection to another starts it e
   expect(await ui.find({ type: 'Text', text: /Connected to Standup/ })).toBeDefined()
   await ui.unmount()
 })
+
+test('a handoff from the new meeting that arrives before the connect is answered stays listed', async ($, on) => {
+  const cli = connectedCli()
+  let isSlow = false
+  const stub = stage(on, {
+    isLive: true,
+    printed: [printed('Rename the flag')],
+    cli: command => {
+      const answer = cli.answer(command)
+      return isSlow && command === 'status' ? stub.clock.sleep(1_000).then(() => answer) : answer
+    },
+  })
+  const listed = async (text: RegExp) => {
+    const ui = await $.ui.mount(pane('terminal'))
+    const found = (await ui.find({ type: 'Text', text })) !== undefined
+    await ui.unmount()
+    return found
+  }
+
+  await start($)
+  await stub.settle()
+  await run($, 'blixel:disconnect')
+  await stub.settle()
+
+  cli.meeting = 'm-2'
+  isSlow = true
+  const connecting = run($, 'blixel:connect')
+  await stub.settle()
+  stub.print(printed('Run the tests', 'Bea', 2))
+  await stub.settle()
+  await stub.clock.advance(1_000)
+  await connecting
+  await stub.settle()
+
+  expect(await listed(/Run the tests/)).toBe(true)
+  expect(await listed(/Rename the flag/)).toBe(false)
+})
+
+test('a handoff from the meeting the session left is not listed once it connects to another, with no poll between', async ($, on) => {
+  const cli = connectedCli()
+  const stub = stage(on, { isLive: true, cli: command => cli.answer(command) })
+  const listed = async () => {
+    const ui = await $.ui.mount(pane('terminal'))
+    const found = (await ui.find({ type: 'Text', text: /Rename the flag/ })) !== undefined
+    await ui.unmount()
+    return found
+  }
+
+  await start($)
+  await stub.settle()
+  stub.print(printed('Rename the flag'))
+  await stub.settle()
+  expect(await listed()).toBe(true)
+
+  cli.meeting = 'm-2'
+  await run($, 'blixel:connect')
+  await stub.settle()
+  expect(await listed()).toBe(false)
+})
+
+test("a handoff from the meeting the session left is not listed once the skill's Bash call connects it to another", async ($, on) => {
+  const cli = connectedCli()
+  const stub = stage(on, { isLive: true, cli: command => cli.answer(command) })
+  on('tool.call', () => {
+    cli.answer('connect')
+    return { result: { stdout: '', stderr: '', interrupted: false } }
+  })
+
+  await start($)
+  await stub.settle()
+  stub.print(printed('Rename the flag'))
+  await stub.settle()
+
+  cli.meeting = 'm-2'
+  await $.tool.call({ tool: 'Bash', command: 'blixel agent connect' })
+  await stub.settle()
+  const ui = await $.ui.mount(pane('terminal'))
+  expect(await ui.find({ type: 'Text', text: /Rename the flag/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /Connected to Design sync/ })).toBeDefined()
+  await ui.unmount()
+})

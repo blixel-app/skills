@@ -12,6 +12,8 @@ export type Setup = {
   // What the follower prints on stdout, chunk by chunk, the first time it runs:
   // `printed` lines.
   printed?: string[]
+  // Keeps the first follower running after `printed`, printing what `print` hands it.
+  isLive?: boolean
   // Answers each prompt the mod submits; a string drops it with that reason.
   submit?: (text: string) => string | undefined | Promise<string | undefined>
   // Answers `blixel agent <command>` and `blixel room current` (as `current`);
@@ -50,6 +52,8 @@ export function stage(on: On, setup: Setup = {}) {
   const runs: Run[] = []
   const saved = new Map<string, unknown>(Object.entries(setup.stored ?? {}))
   let spawns = 0
+  const later: string[] = []
+  let wake = () => {}
 
   on('session.start', () => ({ cwd: '/work' }))
   on('turn.complete', () => ({ text: '' }))
@@ -105,6 +109,12 @@ export function stage(on: On, setup: Setup = {}) {
     if (spawns === 1) {
       yield { stream: 'stderr', text: '{"event":"follower","data":{"state":"attached"}}\n' }
       for (const text of setup.printed ?? []) yield { stream: 'stdout', text }
+      while (setup.isLive) {
+        while (later.length > 0) yield { stream: 'stdout', text: later.shift() ?? '' }
+        await new Promise<void>(resolve => {
+          wake = resolve
+        })
+      }
     }
     return { value: { code: 0, signal: null } }
   })
@@ -120,6 +130,10 @@ export function stage(on: On, setup: Setup = {}) {
     panes,
     bare,
     spawns: () => spawns,
+    print: (text: string) => {
+      later.push(text)
+      wake()
+    },
     status: () => statuses.at(-1),
     // Lets the follower's loop and the deliveries it started run to rest.
     settle: async () => {

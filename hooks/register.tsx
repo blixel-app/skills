@@ -15,6 +15,7 @@ type Session = {
   status: () => Promise<string>
   deliver: () => Promise<void>
   refresh: () => Promise<Answer>
+  connecting: () => void
   forget: () => Promise<void>
 }
 
@@ -273,8 +274,15 @@ export const register: Register = on => {
     let asked = 0
     let answered = 0
     let unanswered = 0
+    // Handoffs numbered from here on may be from a connection made after a
+    // connect started or a refresh asked; those before it cannot be.
+    let since = queue.next
+    const connecting = () => {
+      since = Math.max(since, queue.next)
+    }
     const refresh = async () => {
       const n = (asked += 1)
+      const mark = queue.next
       unanswered += 1
       const [answer, current] = await Promise.all([call(['agent', 'status']), call(['room', 'current'])]).finally(
         () => (unanswered -= 1),
@@ -305,8 +313,10 @@ export const register: Register = on => {
       // The list is one meeting's: a connection to another starts it again.
       const connectedTo = answer.data.connection?.meeting_id ?? answer.data.meeting_id
       if (now && typeof connectedTo === 'string' && connectedTo !== view.meeting) {
-        view = { ...view, meeting: connectedTo, handoffs: view.meeting === null ? view.handoffs : [] }
+        const kept = view.meeting === null ? view.handoffs : view.handoffs.filter(one => one.n >= since)
+        view = { ...view, meeting: connectedTo, handoffs: kept }
       }
+      since = Math.max(since, mark)
       if (connected && !now && !disconnecting) {
         const reason = answer.data.session?.ended?.end_reason
         $.ui.toast(reason ? `Blixel disconnected this session (${reason}).` : 'Blixel disconnected this session.')
@@ -331,6 +341,7 @@ export const register: Register = on => {
     session = {
       connect: async approval => {
         const args = ['agent', 'connect', ...(approval ? ['--approval', approval] : [])]
+        connecting()
         let answer = await call(args)
         if (answer.error?.code === 'connect_outcome_unknown' && answer.requestID) {
           answer = await call([...args, '--request-id', answer.requestID])
@@ -386,6 +397,7 @@ export const register: Register = on => {
 
       deliver,
       refresh,
+      connecting,
       forget: () => $.store.delete(key).catch(() => undefined),
     }
 
@@ -571,8 +583,10 @@ export const register: Register = on => {
 
   // The connect-agent skill connects and disconnects through Bash.
   on('tool.call', { tool: 'Bash' }, async ($, e, next) => {
+    const command = /\bblixel\b.*\bagent\s+(connect|disconnect)\b/.exec(e.command)?.[1]
+    if (command === 'connect') session?.connecting()
     const ran = await next(e)
-    if (/\bblixel\b.*\bagent\s+(connect|disconnect)\b/.test(e.command)) void session?.refresh()
+    if (command) void session?.refresh()
     return ran
   })
 
